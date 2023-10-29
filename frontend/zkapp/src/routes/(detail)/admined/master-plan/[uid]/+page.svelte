@@ -44,10 +44,10 @@
             label="State" 
             type="select" 
             options={[
-              { value: "1", text: "DRAFT"},
-              { value: "8", text: "ACTIVE"},
-              { value: "9", text: "PAUSED"},
-              { value: "10", text: "INACTIVE"},
+              { value: 1, text: "DRAFT"},
+              { value: 8, text: "ACTIVE"},
+              { value: 9, text: "PAUSED"},
+              { value: 10, text: "INACTIVE"},
             ]}
             class="w-25"
             bind:value={data.state} 
@@ -263,7 +263,11 @@
     <div class="text-center my-4 ms-4">
       <Button color="primary" class="rounded-5 px-4 py-2"
         on:click={updateIt}>
-        Update it !
+         {#if loading }
+           Updating...
+        {:else}
+            Update Data
+        {/if}
       </Button>  
     </div>
   </Section>
@@ -290,7 +294,7 @@
 
   let user = getCurrentUser();
   let openDlg = false;
-
+ let loading = false;
   onMount(() => {
     user = getCurrentUser();
   })
@@ -313,9 +317,11 @@
       AppStatus.error("All fields are required !")
       return;
     }
+    loading = true;
     const updated = await updatePlan(data);
     if (updated) 
       history.back();
+    loading = false;
   }
 
   // Some style helpers

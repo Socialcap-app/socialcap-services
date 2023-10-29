@@ -1,3 +1,5 @@
+
+
 <DetailPageHeader items={[
     { href: "/", text: 'Home'},
     { href: "/", text: 'Submit your vote'}
@@ -51,20 +53,64 @@
     <hr>
   </Section>
 
-  <Section class="section-sm text-start">
+  <Section class="section-sm m-auto text-center rounded-4 bg-white mt-3 d-flex justify-content-center">
     <Form>
-      <div class="d-flex align-items-center justify-content-start">
-        <FormGroup class="mt-3 me-2 w-75">
-          <Label for="alias" class="fw-bold fs-6 text-secondary ps-1 mb-1">Your vote</Label>
-          <Input 
+      <div class="rounded-4">
+        <FormGroup class="p-4 text-center d-flex flex-column">
+          <Label for="alias"class="fs-1 text-bold text-black ps-1 ">Your vote</Label>
+          <FormText color="ps-1 fs-2 text-black mb-4">
+            Please submit your vote before ({data.dueUTC}).
+          </FormText>
+          <FormGroup>
+            
+            <div class=" d-flex justify-content-between gap-3 w-50">
+              <div class="vote-container">
+                <input type="radio" class="btn-check" name="vote" id="positive" autocomplete="off">
+                  <label class="btn bg-light p-5 d-flex flex-column text-primary" for="positive"><Icon name="plus-circle-fill" class='fs-1 text-success' /> <span>Positive</span></label>    
+              </div>
+              <div class="vote-container">
+              <input type="radio" class="btn-check" name="vote" id="negative" autocomplete="off">
+              <label class="btn bg-light p-5 d-flex flex-column text-primary" for="negative">
+                <Icon name="dash-circle-fill" class='fs-1 text-danger' /> Negative
+              </label>
+              </div>
+              <input
+              bind:value={vote} 
+               type="radio" class="btn-check" name="vote" id="abstain" autocomplete="off">
+              <label class="btn bg-light p-5 d-flex flex-column text-primary" for="abstain">
+                <Icon name="slash-circle-fill" class='fs-1 text-warning' /> Abstain
+              </label>
+
+            <!-- <Input
+              class="radio-button"
+              id="r1"
+              type="radio"
+              bind:group={radioGroup}
+              value="positive"
+              label="Positive"
+            />
+            <div class="ratio-btn">
+              <label for="Negative" class="radio-btn-label">Negative</label>
+
+            </div> -->
+            </div>
+
+
+
+            
+          </FormGroup>
+
+          <!-- <Input 
             bind:value={vote} 
             type="select" name="vote" id="vote" 
             class="rounded-1 p-2 mb-1" style="width:12rem;">
             <option value="Y">Positive</option>
             <option value="N">Negative</option>
             <option value="A">Abstain</option>
-            <option value="ND">Will not do</option>
-          </Input>          
+           <option value="ND">Will not do</option>
+          </Input>            -->
+
+          
         </FormGroup>
         {#if vote}
           <SubmitButton
@@ -77,12 +123,15 @@
       </p>
 
       {#if vote==="N" || vote==="A" || vote==="ND"}
-      <FormGroup class="mt-3">
-        <Label for="alias" class="fw-bold fs-6 text-secondary ps-1 mb-1">Why ?</Label>
-        <Input 
+      <div class="d-flex justify-content-center rounded-4">
+        
+        <FormGroup class="d-flex flex-column justify-content-center w-100">
+         
+          <Input 
           bind:value={data.reason} 
-          type="select" name="vote" id="vote" 
-          class="rounded-1 p-2 mb-1">
+          type="select" name="vote" id="vote"
+          class="rounded-2 p-3 mb-1 w-100">
+          <option value="" class="text-danger" disabled>Please choose a reason</option>
           <option value="N1">Does not match requirements</option>
           <option value="N2">Not enough evidence</option>
           <option value="A1">Conflict of interests</option>
@@ -92,9 +141,6 @@
           <option value="A5">Not enough rewards</option>
           <option value="A6">Other</option>
         </Input>          
-        <FormText color="muted ps-1">
-          Please select the reason why you are voting in this way.
-        </FormText>
       </FormGroup>
       {/if}
     </Form>
@@ -308,4 +354,9 @@
     if (updated) 
       history.back();
   }
+
 </script>
+
+
+
+

@@ -50,11 +50,16 @@
       <TabPane tabId="name" tab="General" class="text-start" active>
         <FormGroup>
           <Label>Name</Label>
-          <Input type="text" bind:value={data.name} />
+          <Input type="text"
+            bind:value={data.name} required
+            feedback="Name is required. Should have less than 128 characters."
+            invalid={!data.name.trim() || data.name.length > 128 }/>
         </FormGroup>
         <FormGroup>
           <Label>Brief description</Label>
-          <Input type="textarea" bind:value={data.description} />
+          <Input type="textarea" bind:value={data.description} required
+            feedback="Description is required. Should have less than 128 characters."
+            invalid={!data.description.trim() || data.description.length > 128 }/>
         </FormGroup>
 
         <FormGroup>
@@ -88,9 +93,13 @@
         {/each}
     </div> -->
     <div class="text-center mt-4 mb-5">
-      <Button color="primary" class="rounded-5 px-3"
-        on:click={updateIt}>
-        Update data !
+      <Button color="primary" class="rounded-5 px-3" loading=true
+        on:click={handleSubmit}>
+          {#if loading }
+           Updating...
+        {:else}
+            Update Data
+        {/if}
       </Button>
     </div>
   </Section>
@@ -99,7 +108,7 @@
 
 <script>
   import { onMount } from "svelte";
-  import { Button, Badge } from "sveltestrap";
+  import { Button, Badge, Spinner} from "sveltestrap";
   import { TabContent, TabPane } from 'sveltestrap';  
   import { FormGroup, Label, Input } from "sveltestrap";
   import Section from "@components/Section.svelte";
@@ -117,6 +126,7 @@
 
   let user = getCurrentUser();
   let openDlg = false;
+  let loading = false;
 
   let stateColors = {
     "APPLIED": "warning",
@@ -138,16 +148,18 @@
   }
 
   function dataIsOk(data) {
-    return (data.name.trim() && data.description.trim());
+    return (data.name.trim() && data.description.trim() && data.description.length <=128 && data.name.length <=128);
   }
 
-  async function updateIt() {
+  async function handleSubmit() {
     if (!dataIsOk(data)) {
       AppStatus.error("All fields are required !")
       return;
     }
+    loading = true;
     const updated = await updateCommunity(data);
     if (updated) 
       history.back();
+    loading = false;
   }
 </script>

@@ -1,10 +1,24 @@
 <script>
   import Status from "@components/Status.svelte";
   import { onMount } from "svelte";
+   import "nprogress/nprogress.css";
+    import NProgress from "nprogress";
+      import { navigating } from "$app/stores";
 
   onMount(async () => {
     console.log("+layout.svelte onMount")
   })
+
+   NProgress.configure({
+        // Full list: https://github.com/rstacruz/nprogress#configuration
+        minimum: 0.08,
+    });
+
+    $: {
+        if ($navigating) {
+            NProgress.start();
+        } else NProgress.done();
+    }
 </script>
 
 <svelte:head>

@@ -13,5 +13,14 @@ body {
 
 a {
   color: inherit;
-  font-size: 1.15em;
+}
+
+a:hover {
+  text-decoration: none !important;
+}
+
+.bg-image { 
+  background-image: url('/static/img/svg/socialcap-bg-signin.svg'); 
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
