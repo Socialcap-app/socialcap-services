@@ -3,6 +3,7 @@ import { UID, ASSIGNED, UTCDateTime } from "@socialcap/contracts";
 import { logger, prisma } from "../global.js";
 import { updateEntity } from "../dbs/any-entity-helpers.js";
 import { sendEmail } from "./email-service.js";
+import { VoteRequestTemplate } from "../resources/email-templates.js";
 
 export {
   assignTaskToElectors
@@ -41,22 +42,11 @@ async function assignTaskToElectors(
 
     console.log(`Assigned to=${elector.email} task=${task.uid} claim=${claim.uid}`);
 
-    // send notifications
-    const mailBody = `
-      Hi there validator,
-
-      You have been assigned task #${task.uid} !
-      Please go to the Socialcap app and open the tab "My tasks".
-      There you can evaluate this claim and emit your vote,
-      Thanks in advance !
-
-      The SocialCap team.
-    `;
-
     await sendEmail ({
       email: elector.email,
       subject: "SocialCap is requesting your vote",
-      text: mailBody
+      text: "This is your assigned task: "+task.uid,
+      html: VoteRequestTemplate(elector.fullName, task.uid),
     });
   })
 } 

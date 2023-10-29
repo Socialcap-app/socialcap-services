@@ -36,3 +36,34 @@ this code with anyone.</p>
 <hr/>
 © 2023 <a href="https://socialcap.app">Socialcap.app</a>, All Rights Reserved.
 `;
+
+
+export const VoteRequestTemplate = (alias: string, taskUid: string) =>  `
+<p>Hi <b>${alias}:</b></p>
+
+<p>You have been assigned the task: <b>#${taskUid}</b> !</p>
+<p>
+  Please go your Socialcap app and open the tab "My tasks".
+  There you can open the claiam and th evidence, so you can evaluate it and emit your vote.
+</p>
+
+<p>Thanks in advance fo your work !</>
+
+<p>The SocialCap team.</p>
+
+<hr/>
+<p>Don’t recognize this activity? Please  contact customer support immediately.<p>
+<p>This is an automated message, please do not reply.<p>
+<p>© 2023 <a href="https://socialcap.app">Socialcap.app</a>, All Rights Reserved.</p>
+`;
+    // send notifications
+    const mailBody = `
+      Hi there validator,
+
+      You have been assigned task #${task.uid} !
+      Please go to the Socialcap app and open the tab "My tasks".
+      There you can evaluate this claim and emit your vote,
+      Thanks in advance !
+
+      The SocialCap team.
+    `;
