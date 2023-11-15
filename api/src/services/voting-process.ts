@@ -27,6 +27,8 @@ async function startClaimVotingProcess(
     if (claim.state !== CLAIMED)
       return;
   
+    console.log("Claim=", claim.uid, claim.state, claim.planUid, claim.communityUid);
+
     let plan = await getEntity("plan", claim.planUid);
     let planStrategy = JSON.parse(plan.strategy);
 
@@ -48,12 +50,16 @@ async function startClaimVotingProcess(
     // get validators and auditors set  
     let validators = await getValidators(claim.communityUid);
     let auditors = await getAuditors(claim.communityUid);
-      
+
+    console.log("Auditors=", auditors);
+    
     // now select the electors using the strategy binded to this plan
     let electors = (new VotingStrategy(planStrategy)).selectElectors(
       validators,
       auditors
     );
+
+    console.log("Electors=", electors);
 
     // now prepare the Nullifier to avoid invalid/double voting 
     const nullifier = await getNullifierOrRaise();
