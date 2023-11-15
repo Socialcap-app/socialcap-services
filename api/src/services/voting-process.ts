@@ -26,7 +26,8 @@ async function startClaimVotingProcess(
   try {
     if (claim.state !== CLAIMED)
       return;
-  
+
+    console.log("\n\n\n-------");
     console.log("Claim=", claim.uid, claim.state, claim.planUid, claim.communityUid);
 
     let plan = await getEntity("plan", claim.planUid);
@@ -62,6 +63,7 @@ async function startClaimVotingProcess(
     console.log("Electors=", electors);
 
     // now prepare the Nullifier to avoid invalid/double voting 
+    console.log("Add electors to nullifier=",claim);
     const nullifier = await getNullifierOrRaise();
     let nullifierUpdate = await addElectorsToNullifier(
       nullifier, 
