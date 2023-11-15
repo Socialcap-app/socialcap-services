@@ -16,3 +16,24 @@ export async function getRunningClaims(params?: any) {
   return claims || [];
 }
 
+export async function updateClaimVotes(params: {
+  uid: string,
+  positive: number,
+  negative: number,
+  ignored: number
+}) {
+
+  const claim = await prisma.claim.update({
+    where: { uid: params.uid },
+    data: { 
+      positiveVotes: params.positive,
+      negativeVotes: params.negative,
+      ignoredVotes: params.ignored,
+      updatedUTC: (new Date()).toISOString()
+    }
+  })  
+
+  return claim;
+}
+
+

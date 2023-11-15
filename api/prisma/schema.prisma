@@ -233,32 +233,19 @@ model Proposed {
 // We can have different batch types: NONE, VOTES, ...
 //
 model Batch {
-  // an unique Uid for this batch
-  uid             String    @id @unique
-  // order in which batch was received, used by Sequencer
-  sequence        Int       @default(autoincrement())
-  // type of the Batch: "NONE", "VOTES"
-  type            String    @default("NONE")
-  // JSON string of this batch metadata 
-  metadata        String    @default("{}")
-  // the signer Public key who submitted this batch
-  signerAccountId String    @map("signer_account_id")
-  // JSON string of received signed data
-  signedData      String    @default("") @map("signed_data")
-  // Signature 
-  signatureField  String    @default("") @map("signed_signature")
+  uid             String    @id @unique // an unique Uid for this batch
+  sequence        Int       @default(autoincrement()) // order in which batch was received, used by Sequencer
+  type            String    @default("NONE") // type of the Batch: "NONE", "VOTES"
+  metadata        String    @default("{}") // JSON string of this batch metadata 
+  signerAccountId String    @map("signer_account_id") // the signer Public key who submitted this batch
+  signedData      String    @default("") @map("signed_data") // JSON string of received signed data
+  signatureField  String    @default("") @map("signed_signature") // Signature 
   signatureScalar String    @default("") @map("signed_scalar")
-  // the commited Root of the batch MerkleTree (after being processed)
-  commitment      String    @default("")
-  // Total number of votes received in this batch
-  size            Int       @default(0)
-  // Processing state of the Batch
-  // 9: "WAITING", 10: "DONE", 11: "IGNORED" 19: "REJECTED"
-  state           Int       @default(9)
-  // the submitted time
-  submitedUTC     DateTime  @default(now()) @map("submited_utc")
-  // the final processed time
-  doneUTC         DateTime? @map("done_utc")
+  commitment      String    @default("") // the commited Root of the batch MerkleTree (after being processed)
+  size            Int       @default(0) // Total number of votes received in this batch
+  state           Int       @default(9) // Processing state of the Batch 9: "WAITING", 10: "DONE", 11: "IGNORED" 19: "REJECTED"
+  submitedUTC     DateTime  @default(now()) @map("submited_utc") // the submitted time
+  doneUTC         DateTime? @map("done_utc") // the final processed time
 
   @@map("batches")
 }
@@ -268,4 +255,25 @@ model State {
   label String @default("")
 
   @@map("states")
+}
+
+model TxQueues {
+  // The transactions queue 
+  uid         String    @id @unique // an unique Uid for this Tx
+  sequence    Int       @default(autoincrement()) // order in which Tx was received, used by Sequencer
+  queue       String    @default("") // name of the Tx queue, example: BATCH, PublicKey of , etc ... 
+  type        String    @default("") // type VOTES_BATCH, ACCOUNT_CREATION, VOTE_ACTION
+  data        String    @default("{}") // JSON string of this transaction data
+  state       Int       @default(9) // Processing state of the Tx 9: "WAITING", 10: "DONE", 11: "IGNORED" 13: "FAILED"
+  receivedUTC DateTime  @default(now()) @map("received_utc") // the submitted time
+  submitedUTC DateTime  @map("submited_utc") // the submited to MINA time
+  doneUTC     DateTime? @map("done_utc") // the final "done with it" time (either on DONE, FAILED or IGNORED)
+  retries     Int       @default(0) // Number of retries of this transaction before declaring Failure
+
+  // MINA transaction info, either final success status or errors 
+  // as returned by the Graphql endpoint used to check it
+  MinaTxId     String @default("") // 
+  MinaTxStatus String @default("") // 
+
+  @@map("tx_queues")
 }

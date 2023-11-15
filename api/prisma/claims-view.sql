@@ -1,9 +1,12 @@
-CREATE VIEW claims_view AS 
+DROP VIEW claims_view;
+
+CREATE OR REPLACE VIEW claims_view AS 
 SELECT 
 	cl.uid, cl.state, st.label as state_descr, 
-	pe.full_name as person, pe.uid as person_uid, 
-	cm.name as community, cl.uid as community_uid,
-	cl.created_utc, cl.updated_utc
+	pe.full_name as applicant, pe.uid as applicant_uid, 
+	cm.name as community, cm.uid as community_uid,
+	cl.created_utc, cl.updated_utc,
+  cl.positive_votes, cl.negative_votes, cl.ignored_votes
 FROM public.claims cl, persons pe, communities cm, states st
 WHERE
 	cl.applicant_uid=pe.uid AND cl.community_uid=cm.uid AND cl.state=st.id;

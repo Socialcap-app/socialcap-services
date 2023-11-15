@@ -63,3 +63,26 @@ export async function createVotesBatch(params: {
 
   return batch;
 }
+
+/**
+ * Returns the list of batches belonging to a given plan and filtered by state
+ * @param planUid 
+ * @param state 
+ * @returns array of batches
+ */
+export async function getBatchesByPlan(planUid: string, state: number) {
+
+  let batches = await prisma.batch.findMany({
+    where: { state: state } 
+  });
+  if (! batches || !batches.length)
+    return [];
+
+  // filter batches by planUid 
+  let filtered = batches.filter((t: any) => {
+    const metadata = JSON.parse(t.metadata);
+    return (metadata.planUid === planUid);
+  });  
+
+  return filtered;
+}
