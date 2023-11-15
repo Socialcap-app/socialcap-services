@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Mina, PublicKey, PrivateKey } from 'snarkyjs';
+import { Mina, PublicKey, PrivateKey } from 'o1js';
 import { logger, prisma } from "./global.js";
 import { ClaimsVotingFactory, VotingContract, APPROVED, REJECTED, IGNORED } from "@socialcap/contracts";
 import { rollupClaims } from "./services/voting-rollups.js";

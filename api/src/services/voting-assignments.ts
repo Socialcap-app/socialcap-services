@@ -1,4 +1,4 @@
-import { Field } from "snarkyjs";
+import { Field } from "o1js";
 import { UID, ASSIGNED, UTCDateTime } from "@socialcap/contracts";
 import { logger, prisma } from "../global.js";
 import { updateEntity } from "../dbs/any-entity-helpers.js";

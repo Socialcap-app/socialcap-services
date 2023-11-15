@@ -1,5 +1,5 @@
 import { MerkleMapUpdate } from "@socialcap/contracts";
-import { Field } from "snarkyjs";
+import { Field } from "o1js";
 
 export interface SequencerTransaction {
   txid: string,

@@ -4,7 +4,7 @@
  * RDBMS and can be accesed using the API.
  * @created - MAZito - 2023-06-06
  */
-import { Field, MerkleMap, MerkleMapWitness, UInt32 } from "snarkyjs"
+import { Field, MerkleMap, MerkleMapWitness, UInt32 } from "o1js"
 import { logger, prisma } from "../global.js";
 import { ResultOrError, hasError, hasResult } from "../responses.js";
 import { UID, MerkleMapUpdate, LeafInstance } from "@socialcap/contracts";

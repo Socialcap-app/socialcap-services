@@ -1,4 +1,4 @@
-import { PublicKey, Field } from "snarkyjs";
+import { PublicKey, Field } from "o1js";
 import { NullifierProxy, UID } from "@socialcap/contracts";
 import { CANCELED,ASSIGNED,DONE,IGNORED } from "@socialcap/contracts";
 import { fastify, prisma, logger } from "../global.js";

@@ -1,4 +1,4 @@
-import { Field, UInt32, CircuitString, MerkleMapWitness } from "snarkyjs";
+import { Field, UInt32, CircuitString, MerkleMapWitness } from "o1js";
 import { raiseError } from "../errors.js"
 import { MerkleMapProxy, MerkleMapUpdate } from "@socialcap/contracts" ;
 import { OffchainMerkleMap } from "./offchain-merkle-map.js";

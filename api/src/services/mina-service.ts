@@ -2,7 +2,7 @@ import { logger } from "../global.js";
 import { 
   Mina, PublicKey, PrivateKey, MerkleMapWitness, CircuitString,
   Field, UInt32 
-} from "snarkyjs";
+} from "o1js";
 import { 
   COMMUNITIES_MERKLE_MAP, PERSONS_MERKLE_MAP, MEMBERS_MERKLE_MAP,
   PLANS_MERKLE_MAP, CLAIMS_MERKLE_MAP, CREDENTIALS_MERKLE_MAP, TASKS_MERKLE_MAP,

@@ -1,5 +1,5 @@
 import { prisma } from "../global.js";
-import { Field, MerkleMapWitness, PublicKey, UInt32 } from "snarkyjs";
+import { Field, MerkleMapWitness, PublicKey, UInt32 } from "o1js";
 import { UID, NullifierProxy, MerkleMapUpdate } from "@socialcap/contracts";
 import { OffchainMerkleStorage } from "./offchain-merkle-storage.js";
 import { OffchainMerkleMap } from "./offchain-merkle-map.js";

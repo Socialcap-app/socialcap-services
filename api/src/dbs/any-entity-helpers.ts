@@ -1,4 +1,4 @@
-import { CircuitString, Field, UInt32 } from "snarkyjs";
+import { CircuitString, Field, UInt32 } from "o1js";
 import { prisma } from "../global.js";
 import { 
   PersonPartialSchema, CommunityPartialSchema, MembersPartialSchema,

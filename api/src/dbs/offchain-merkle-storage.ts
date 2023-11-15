@@ -4,7 +4,7 @@
  * where map header and leafs are stored in a RDB
  * @created - MAZito - 2023-06-06
  */
-import { Field } from "snarkyjs";
+import { Field } from "o1js";
 import { logger, prisma } from "../global.js";
 import { ResultOrError, hasError, hasResult } from "../responses.js";
 import { OffchainMerkleMap } from "./offchain-merkle-map.js";

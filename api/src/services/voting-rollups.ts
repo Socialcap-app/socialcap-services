@@ -1,4 +1,4 @@
-import { Mina, Field, PrivateKey, PublicKey, UInt64 } from 'snarkyjs';
+import { Mina, Field, PrivateKey, PublicKey, UInt64 } from 'o1js';
 import { ClaimsVotingFactory, VotingContract } from "@socialcap/contracts";
 
 export { rollupClaims };

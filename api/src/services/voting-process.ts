@@ -6,7 +6,7 @@
  * - Assign tasks to validators and send mails ...
  * - ... wait for votes ...
  */
-import { Field, PublicKey, PrivateKey, Mina, MerkleMap } from "snarkyjs";
+import { Field, PublicKey, PrivateKey, Mina, MerkleMap } from "o1js";
 import { UID, VotingInstance, ClaimsVotingFactory, NullifierProxy } from "@socialcap/contracts";
 import { VOTING, CLAIMED } from "@socialcap/contracts";
 import { logger } from "../global.js";
@@ -30,6 +30,8 @@ async function startClaimVotingProcess(
     let plan = await getEntity("plan", claim.planUid);
     let planStrategy = JSON.parse(plan.strategy);
 
+    console.log("Strategy=", planStrategy);
+    
     // MUST be sure before deploying ...
     setMinaNetwork();
 
