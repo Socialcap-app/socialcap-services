@@ -1,16 +1,31 @@
-import { error } from "console";
-import { 
-  TransactionsQueue,
-  WAITING, DONE, FAILED, REVISION, MAX_RETRIES 
-} from "../dbs/transaction-helpers.js";
-import {
-  TxSubmitHandlers
-} from "./submit-handlers.js";
+import { TransactionsQueue, WAITING, DONE, FAILED, REVISION, MAX_RETRIES } from "./transaction-queues.js";
+import { TxSubmitHandlers } from "./submit-handlers.js";
+import { SequencerLogger } from "./logs.js";
+
+export {
+  Sequencer
+}
+
+const log = SequencerLogger; // alias for the logger
 
 
 class Sequencer {
 
   static _queues = new Map<string, TransactionsQueue>;
+
+  /**
+   * Post a transaction to the Sequencer.
+   */
+  static async postTransaction(queueId: string, params: {
+    type: string,
+    data: any
+  }): Promise<any> {
+    let tx = await TransactionsQueue
+      .queue(queueId)
+      .push(params);
+    log.postedTx(tx);
+  }
+
 
   /**
    * 
