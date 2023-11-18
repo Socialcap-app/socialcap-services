@@ -235,7 +235,7 @@ model Proposed {
 model Batch {
   uid             String    @id @unique // an unique Uid for this batch
   sequence        Int       @default(autoincrement()) // order in which batch was received, used by Sequencer
-  type            String    @default("NONE") // type of the Batch: "NONE", "VOTES"
+  type            String    @default("NONE") // type of the Batch: "NONE", "VOTES", etc ...
   metadata        String    @default("{}") // JSON string of this batch metadata 
   signerAccountId String    @map("signer_account_id") // the signer Public key who submitted this batch
   signedData      String    @default("") @map("signed_data") // JSON string of received signed data
@@ -247,8 +247,14 @@ model Batch {
   submitedUTC     DateTime  @default(now()) @map("submited_utc") // the submitted time
   doneUTC         DateTime? @map("done_utc") // the final processed time
 
+  // Mina transactions info 
+  BatchesAccountId String? @default("")  @map("batches_account_id") // The BatchesContract account id
+  BatchReceivedTxnUid String ? @default("")  @map("batch_received_txn_uid") // the batch submited transaction, as stored in TransactionQueues 
+  BatchesCommitedTxnUid String? @default("")  @map("batches_commited_txn_uid") // the merge transsaction, as stored in TransactionQueues 
+
   @@map("batches")
 }
+
 
 model State {
   id    Int    @id @unique
@@ -257,7 +263,8 @@ model State {
   @@map("states")
 }
 
-model TxQueues {
+
+model TransactionQueue {
   // The transactions queue 
   uid         String    @id @unique // an unique Uid for this Tx
   sequence    Int       @default(autoincrement()) // order in which Tx was received, used by Sequencer
@@ -272,8 +279,8 @@ model TxQueues {
 
   // MINA transaction info, either final success status or errors 
   // as returned by the Graphql endpoint used to check it
-  MinaTxId     String @default("") // 
-  MinaTxStatus String @default("") // 
+  MinaTxnId     String @default("") @map("mina_txn_id") // 
+  MinaTxnStatus String @default("") @map("mina_txn_status") // 
 
-  @@map("tx_queues")
+  @@map("transaction_queues")
 }

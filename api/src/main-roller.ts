@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Mina, PublicKey, PrivateKey } from 'o1js';
 import { logger, prisma } from "./global.js";
-import { ClaimsVotingFactory, VotingContract, APPROVED, REJECTED, IGNORED } from "@socialcap/contracts";
+import { ClaimsVotingFactory, ClaimVotingContract, APPROVED, REJECTED, IGNORED } from "@socialcap/contracts";
 import { rollupClaims } from "./services/voting-rollups.js";
 //import { updateEntity } from './dbs/any-entity-helpers.js';
 import { getRunningClaims } from './dbs/claims-helper.js';
@@ -25,7 +25,7 @@ const Berkeley = Mina.Network({
 Mina.setActiveInstance(Berkeley);
 
 console.log("compiling the Contract ");
-//await VotingContract.compile();
+//await ClaimVotingContract.compile();
 
 
 /**
@@ -70,7 +70,7 @@ async function updateFinishedClaims(finished: any): Promise<any[]> {
       APPROVED
       IGNORED ?
 
-    VotingContract results
+    ClaimVotingContract results
       VOTING = Field(0),   // Claim is still in the voting process
       APPROVED = Field(1),
       REJECTED = Field(2),

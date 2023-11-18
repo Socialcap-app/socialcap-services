@@ -16,9 +16,18 @@ export class SequencerLogger {
     console.log(`${dts()}: Started`);
   }
 
-  static postedTx(tx: any) {
-    console.log(`${dts()}: postTransaction uid=${tx.uid} tx=${JSON.stringify(tx)}`);
+  static running(qnames?: string[]) {
+    console.log(`${dts()}: Sequencer.run(), qs=${JSON.stringify(qnames || '[]')}`);
   }
+
+  static postedTxn(txn: any) {
+    console.log(`${dts()}: postTransaction uid=${txn.uid} ${txn.type} data=${txn.data}`);
+  }
+
+  static dispatching(txn: any) {
+    console.log(`${dts()}: dispatch uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
+  }
+
 } 
 
 

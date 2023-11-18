@@ -8,13 +8,15 @@ export {
  * Waits for a MINA transaction to be included, and after completion it calls
  * the given callback or error.
  */
-const INTERVAL = 10000; // evertyu 10 secs
+const INTERVAL = 10000; // every 10 secs
+const GRAPHQL_ENDPOINT =  "https://berkeley.graphql.minaexplorer.com/";
+
 
 async function waitForTransaction(
   txnId: string, 
   params: any, 
-  onSuccess: (params: any) => void,
-  onError: (params: any, error: any) => void
+  onSuccess: (status: any) => void,
+  onError: (status: any, error: string) => void
 ) {
   let ts = (new Date()).toISOString();
   console.log(`${ts} ... waiting for ${txnId} ...`);
@@ -27,7 +29,7 @@ async function waitForTransaction(
 
     if (done && done.blockHeight && done.failureReason === null) {
       // we can now proceed with whatever does the callback
-      onSuccess(params); 
+      onSuccess(done); 
       clearTimeout(timer)
       return;
     }
@@ -38,7 +40,7 @@ async function waitForTransaction(
       }).join(", ");
 
       // report error somehow
-      onError(params, `Txn ${txnId} failed: ${message}`);
+      onError(done, `Txn ${txnId} failed: ${message}`);
       clearTimeout(timer)
       return;
     }
@@ -57,7 +59,7 @@ async function waitForTransaction(
  */
 async function queryTxnStatus(txnId: string): Promise<any> {
   try {
-    const url = `https://berkeley.graphql.minaexplorer.com/`;
+    const url = GRAPHQL_ENDPOINT;
     
     const headers = {}; // no headers needed
 

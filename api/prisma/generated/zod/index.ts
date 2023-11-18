@@ -34,9 +34,11 @@ export const TaskScalarFieldEnumSchema = z.enum(['uid','claimUid','assigneeUid',
 
 export const ProposedScalarFieldEnumSchema = z.enum(['uid','role','personUid','communityUid','createdUTC']);
 
-export const BatchScalarFieldEnumSchema = z.enum(['uid','sequence','type','metadata','signerAccountId','signedData','signatureField','signatureScalar','commitment','size','state','submitedUTC','doneUTC']);
+export const BatchScalarFieldEnumSchema = z.enum(['uid','sequence','type','metadata','signerAccountId','signedData','signatureField','signatureScalar','commitment','size','state','submitedUTC','doneUTC','BatchesAccountId','BatchReceivedTxnUid','BatchesCommitedTxnUid']);
 
 export const StateScalarFieldEnumSchema = z.enum(['id','label']);
+
+export const TransactionQueueScalarFieldEnumSchema = z.enum(['uid','sequence','queue','type','data','state','receivedUTC','submitedUTC','doneUTC','retries','MinaTxnId','MinaTxnStatus']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 
@@ -378,6 +380,9 @@ export const BatchSchema = z.object({
   state: z.number().int(),
   submitedUTC: z.coerce.date(),
   doneUTC: z.coerce.date().nullish(),
+  BatchesAccountId: z.string().nullish(),
+  BatchReceivedTxnUid: z.string().nullish(),
+  BatchesCommitedTxnUid: z.string().nullish(),
 })
 
 export type Batch = z.infer<typeof BatchSchema>
@@ -408,3 +413,32 @@ export type State = z.infer<typeof StateSchema>
 export const StatePartialSchema = StateSchema.partial()
 
 export type StatePartial = z.infer<typeof StatePartialSchema>
+
+/////////////////////////////////////////
+// TRANSACTION QUEUE SCHEMA
+/////////////////////////////////////////
+
+export const TransactionQueueSchema = z.object({
+  uid: z.string(),
+  sequence: z.number().int(),
+  queue: z.string(),
+  type: z.string(),
+  data: z.string(),
+  state: z.number().int(),
+  receivedUTC: z.coerce.date(),
+  submitedUTC: z.coerce.date(),
+  doneUTC: z.coerce.date().nullish(),
+  retries: z.number().int(),
+  MinaTxnId: z.string(),
+  MinaTxnStatus: z.string(),
+})
+
+export type TransactionQueue = z.infer<typeof TransactionQueueSchema>
+
+/////////////////////////////////////////
+// TRANSACTION QUEUE PARTIAL SCHEMA
+/////////////////////////////////////////
+
+export const TransactionQueuePartialSchema = TransactionQueueSchema.partial()
+
+export type TransactionQueuePartial = z.infer<typeof TransactionQueuePartialSchema>

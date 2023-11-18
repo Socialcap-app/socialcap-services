@@ -1,31 +1,14 @@
 import { TransactionsQueue, WAITING, DONE, FAILED, REVISION, MAX_RETRIES } from "./transaction-queues.js";
-import { TxSubmitHandlers } from "./submit-handlers.js";
-import { SequencerLogger } from "./logs.js";
+import { Dispatchers } from "./all-dispatchers.js";
+import { SequencerLogger as log } from "./logs.js";
+import { AnyDispatcher } from "./any-dispatcher.js";
 
-export {
-  Sequencer
-}
-
-const log = SequencerLogger; // alias for the logger
+export { Sequencer };
 
 
 class Sequencer {
 
   static _queues = new Map<string, TransactionsQueue>;
-
-  /**
-   * Post a transaction to the Sequencer.
-   */
-  static async postTransaction(queueId: string, params: {
-    type: string,
-    data: any
-  }): Promise<any> {
-    let tx = await TransactionsQueue
-      .queue(queueId)
-      .push(params);
-    log.postedTx(tx);
-  }
-
 
   /**
    * 
@@ -49,22 +32,16 @@ class Sequencer {
         continue;
 
       // 3. Dispatch the pending transaction
-      // 3.1 Now we can get the Action binded to its type
-      let action = TxSubmitHandlers[pendingTx.type];
-      if (! action)
-        continue;
-
-      // 3.2 Now we can really dispatch it using the right Action
       // This is an asynchronous call, and will callback on Done or Failure.
       try {
-        Sequencer.dispatch(pendingTx, action, {
+        Sequencer.dispatch(pendingTx, {
 
           // the Action was succesfull so we update the transaction status
           onDone: async (result: any) => {
             let doneTx = await queue.closeTransaction(pendingTx.uid, {
               state: DONE,
-              MinaTxId: result.MinaTxId,
-              MinaTxStatus: result.MinaTxStatus
+              MinaTxnId: result.MinaTxnId,
+              MinaTxnStatus: result.MinaTxnStatus
             })
   
             // and we set the queue as free to run other one
@@ -76,14 +53,13 @@ class Sequencer {
           onFailure: async (result: any) => {
             let failedTx = await queue.closeTransaction(pendingTx.uid, {
               state: FAILED,
-              MinaTxId: result.MinaTxId,
-              MinaTxStatus: result.MinaTxStatus
+              MinaTxnId: result.MinaTxnId || "",
+              MinaTxnStatus: result.MinaTxnStatus || result.error || "",
             })
   
             // we check if we have some retries left, and increment its count
             // so it can still be processed in the next cycle
-            if (failedTx.retries < MAX_RETRIES)
-              failedTx = await queue.retryTransaction(failedTx.uid);
+            failedTx = await queue.retryTransaction(failedTx.uid, MAX_RETRIES);
   
             // and we set the queue as free to run it again if can retry
             queue.setNoRunningTx();
@@ -103,29 +79,68 @@ class Sequencer {
       }
     }
 
-    return;
+    return Sequencer;
   }
 
 
   /**
-   * Dispatcher
+   * Dispatcher(s)
    */
   static dispatch(
-    tx: any, 
-    action: (tx: any) => void, 
+    txData: any, 
     callbacks: {
       onDone: (result: any) => void,
       onFailure: (result: any) => void 
     }
   ) {
-    return;
+    if (! Dispatchers.has(txData.type))
+      return; // No dispatcher for this type, cant do anything
+
+    let dispatcherClass = Dispatchers.get(txData.type);
+
+    let dispatcher = new dispatcherClass({
+      onDone: callbacks.onDone,
+      onFailure: callbacks.onFailure 
+    })
+    log.dispatching(txData);
+
+    dispatcher.dispatch(txData); 
   }
+
 
   /**
    * Cleanup queues, because there may be queues that have no more transactions
    * to process but are still in the Sequencer queues map. So we need to remove
    * this ones from the Map.
+   * @returns: an array of the refreshed queues names
    */
+  static async refreshQueues(): Promise<string[]> {
+    let activeNames = (await TransactionsQueue.getActiveQueues())
+                        .map((t: any) => { return t.queue });
+
+    let runningNames = [...Sequencer._queues.keys()]; 
+    (runningNames || []).forEach((name: string) => {
+      // check if it is running 
+      let queue = Sequencer._queues.get(name);
+      if (queue?.hasRunningTx())
+        return; // dont touch it !
+
+      if (!queue?.hasRunningTx() && !activeNames.includes(name)) {
+        Sequencer._queues.delete(name); // must remove it
+        return;
+      }
+    });
+
+    // now add all the new active ones not currently in the running set
+    (activeNames || []).forEach((name: string) => {
+      if (!runningNames.includes(name)) {
+        Sequencer._queues.set(name, (new TransactionsQueue(name)));
+        return;
+      }
+    })
+
+    return [...Sequencer._queues.keys()];
+  }
 
   /**
    * Review queues. We need to take into account the case where some transaction

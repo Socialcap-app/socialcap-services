@@ -6,6 +6,7 @@ import { findCommunityByName } from "./dbs/community-helpers.js";
 import { findMasterPlanByName } from "./dbs/plan-helpers.js";
 import { getBatchesByPlan } from "./dbs/batch-helpers.js";
 import { updateClaimVotes } from "./dbs/claims-helper.js";
+import { Sequencer } from "./sequencer/sequencer.js";
 
 const COMMUNITY_NAME = 'MINA Navigators Community';
 const PLAN_NAME = 'MINA Navigators Hackaton';
@@ -73,7 +74,8 @@ async function run(communityName: string, planName: string) {
           uid: "",
           positive: 0,
           negative: 0,
-          ignored: 0
+          ignored: 0,
+          votes: [] // collect here {elector,result} for latter dispatch
         }
       }
 
@@ -83,8 +85,10 @@ async function run(communityName: string, planName: string) {
         uid: vote.claimUid,
         positive: claimVotes.positive + result.positive,
         negative: claimVotes.negative + result.negative,
-        ignored: claimVotes.ignored + result.ignored
+        ignored: claimVotes.ignored + result.ignored,
       }
+      collector[vote.claimUid].votes
+        .push({elector: batch.signerAccountId, result: vote.result})
     }
   }
 
@@ -99,6 +103,50 @@ async function run(communityName: string, planName: string) {
       negative: t.negative,
       ignored: t.ignored
     })
+
+    // Now submit transactions to MINA 
+    // the queue name will be the publicKey of the account, so that all 
+    // the transactions we send tothis account can end in the same queue
+    // and be processed in the order they were received
+    let qName = `${claim.accountId}` || "";  
+
+    // we have to create the Account in MINA
+    if (! claim.accountId) {
+      /*
+      let { publicKey, privateKey }  = ClaimsVotingFactory.genKeys();
+      qName = `zkapp:%{publickKey}`
+
+      Sequencer.postTransaction(qName, {
+        type: 'CREATE_CLAIM_VOTING_ACCOUNT',
+        data: {
+          claimUid: claim.uid,
+          accountId: publicKey, 
+          strategy: plan?.strategy,
+        }
+      })
+      */
+    }
+
+    // we now send the votes
+    if (! claim.accountId) {
+      /*
+      let { publicKey, privateKey }  = ClaimsVotingFactory.genKeys();
+      qName = `zkapp:%{publickKey}`
+
+      Sequencer.postTransaction(qName, {
+        type: 'SEND_CLAIM_VOTE',
+        data: {
+          claimUid: claim.uid,
+          electorPuk: votes.elector
+          result: vote.result
+        }
+      })
+      */
+    }
+
+    // we rollup all votes now
+    // TODO ! It crashes if more than 5 votes
+
   })
 
   // send the Tx to MINA for zkApp.updateNullifier()

@@ -1,5 +1,5 @@
 import { Mina, Field, PrivateKey, PublicKey, UInt64 } from 'o1js';
-import { ClaimsVotingFactory, VotingContract } from "@socialcap/contracts";
+import { ClaimsVotingFactory, ClaimVotingContract } from "@socialcap/contracts";
 
 export { rollupClaims };
 
@@ -61,7 +61,7 @@ async function rollupClaims(
 
     // just retry to be sure its compiled ...
     console.log("recompling contract ...");
-    await VotingContract.compile();
+    await ClaimVotingContract.compile();
     
     // we should check here if payer has funds for TX fees
     // ...

@@ -42,7 +42,8 @@ async function run(communityName: string) {
 
     // wait for X seconds before next one ...
     const DELAY = 10000;
-    await setTimeout(() => { console.log(`Waiting ${DELAY} seconds`)}, DELAY);
+    console.log(`Waiting ${DELAY} seconds`);
+    await new Promise((resolve) => setTimeout(resolve, DELAY));
   }
 
   // send the Tx to MINA for zkApp.updateNullifier()
