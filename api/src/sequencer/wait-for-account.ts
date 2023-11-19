@@ -1,4 +1,5 @@
 import { fetchAccount, PublicKey } from "o1js";
+import { SequencerLogger as log } from "./logs.js";
 
 export { 
   waitForAccount,
@@ -19,9 +20,8 @@ async function waitForAccount(
   let response = await loopUntilAccountExists({
     account: PublicKey.fromBase58(address),
     eachTimeNotExist: () => {
-      let ts = (new Date()).toISOString();
       counter = counter+5; // every 5 secs
-      console.log(`${ts} ${counter} ... waiting for zkApp account to be fully available ...`);
+      log.waitingAccount(`addr=${address} ... ${counter} secs`);
     },
     isZkAppAccount: true,
     maxRetries: MAX_RETRIES

@@ -17,7 +17,11 @@ export class SequencerLogger {
   }
 
   static running(qnames?: string[]) {
-    console.log(`${dts()}: Sequencer.run(), qs=${JSON.stringify(qnames || '[]')}`);
+    console.log(`${dts()}: Sequencer.run, queues=${JSON.stringify(qnames || '[]')}`);
+  }
+
+  static activeQueue(q: any) {
+    console.log(`${dts()}: queue name=${q._queue} running=${q._txRunning || "NO"}`)
   }
 
   static postedTxn(txn: any) {
@@ -28,6 +32,13 @@ export class SequencerLogger {
     console.log(`${dts()}: dispatch uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
   }
 
+  static pendingTxn(txn: any) {
+    console.log(`${dts()}: pendingTxn=${txn.hash()}`);
+  }
+
+  static waitingAccount(msg: string) {
+    console.log(`${dts()}: waiting for account ${msg}`);
+  }
 } 
 
 

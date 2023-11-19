@@ -71,49 +71,48 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
         .sign([deployer.privateKey, accountPrivateKey])
         .send();
       console.log("zkApp instance deployed !")
+
+      // creating an account in MINA takes a lot of time (betwwen 3 to 10 mins)
+      // before the account is ready, and we can't do anything until it has been
+      // created, so we must wait !
+      let createdAccount = await waitForAccount(account.id);
+      if (! createdAccount) {
+        // we report the error and finish here, we can not do anything more
+        // except let the Sequencer retry this ... until it succeeds or fails
+        await this.onFailure({
+          MinaTxnId: `${pendingTxn.hash()}`,
+          error: CREATE_ACCOUNT_WAITING_TIME_EXCEEDED
+        });
+        return;
+      }
+
+      // AFTER the account has been created, we need to setup the created 
+      // account with the correct local vars, BEFORE we can start voting. We 
+      // post a transaction to do this.
+      postTransaction(`zkapp:${account.id}`, {
+        type: 'SETUP_CLAIM_VOTING_ACCOUNT',
+        data: {
+          accountId: account.id,
+          claimUid: claimUid,
+          strategy: strategy
+        }
+      })        
+
+      // this is done for cleanly closing the dispatch, and getting the full
+      // transaction status, but it will not have to wait because the waiting 
+      // has been done in the waitForAccount: if the account is ready, it means 
+      // the transaction was already included in block. 
+      this.reportErrorOrWait(pendingTxn, {});
+      return;
     } 
     catch (except: any) {
       // this can happen for a number of reasons such as not enough funds
       // for creating the account, some error in the code, etc. So we just
       // catch it and report it 
       await this.onFailure({
-        error: hasException(TRY_SEND_TRANSACTION_EXCEPTION, except)
+        error: hasException(TRY_SEND_TRANSACTION_EXCEPTION, except.toString())
       })
       return;
     }
-
-    // creating an account in MINA takes a lot of time (betwwen 3 to 10 mins)
-    // before the account is ready, and we can't do anything until it has been
-    // created, so we must wait !
-    let createdAccount = await waitForAccount(account.id);
-    if (! createdAccount) {
-      // we report the error and finish here, we can not do anything more
-      // except let the Sequencer retry this ... until it succeeds or fails
-      await this.onFailure({
-        MinaTxnId: `${pendingTxn.hash()}`,
-        error: CREATE_ACCOUNT_WAITING_TIME_EXCEEDED
-      });
-      return;
-    }
-
-    // AFTER the account has been created, we need to setup the created 
-    // account with the correct local vars, BEFORE we can start voting. We 
-    // post a transaction to do this.
-    postTransaction(`zkapp:${account.id}`, {
-      type: 'SETUP_CLAIM_VOTING_ACCOUNT',
-      data: {
-        accountId: account.id,
-        claimUid: claimUid,
-        strategy: strategy
-      }
-    })        
-
-    // this is done for cleanly closing the dispatch, and getting the full
-    // transaction status, but it will not have to wait because the waiting 
-    // has been done in the waitForAccount: if the account is ready, it means 
-    // the transaction was already included in block. 
-    this.reportErrorOrWait(pendingTxn, {});
-
-    return;
   }
 }

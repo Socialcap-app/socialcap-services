@@ -21,6 +21,7 @@ class Sequencer {
     for (let j=0; j < names.length; j++) {
       // 1. Check if we have a running transaction on course. If we have, we just pass.
       let queue = Sequencer._queues.get(names[j]) as TransactionsQueue;
+      log.activeQueue(queue);      
       if (queue.hasRunningTx())
         continue; 
 
@@ -32,6 +33,9 @@ class Sequencer {
         continue;
 
       // 3. Dispatch the pending transaction
+      // first mark it as running so we dont use it until it has finished
+      queue.setTxIsRunning(pendingTx.uid);
+      
       // This is an asynchronous call, and will callback on Done or Failure.
       try {
         Sequencer.dispatch(pendingTx, {

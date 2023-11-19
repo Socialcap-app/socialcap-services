@@ -1,9 +1,10 @@
+import { Mina } from "o1js";
 import { merkleStorage } from "../global.js";
 import { IDispatcherEntry, addDispatcher } from "./all-dispatchers.js";
 import { SequencerLogger as log } from "./logs.js";
 import { Sequencer } from "./sequencer.js";
 
-const INTERVAL = 10000; // everyu 10 secs
+const INTERVAL = 10000; // every 10 secs
 
 
 export function setupSequencer(params: {
@@ -12,6 +13,17 @@ export function setupSequencer(params: {
   (params.dispatchers || []).forEach((t) => {
     addDispatcher(t.name, t.dispatcher);
   })
+
+  console.log("\nRun on Mina.Berkeley");
+  const 
+    BERKELEY_URL = 'https://proxy.berkeley.minaexplorer.com/graphql',
+    ARCHIVE_URL = 'https://archive.berkeley.minaexplorer.com/';
+
+  const Berkeley = Mina.Network({
+    mina: BERKELEY_URL, 
+    archive: ARCHIVE_URL
+  });
+  Mina.setActiveInstance(Berkeley);
 }
 
 
