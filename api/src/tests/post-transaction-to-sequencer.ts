@@ -8,10 +8,10 @@ setTimeout(async () => {
   let txn = await postTransaction("CREATE_CLAIM_VOTING_ACCOUNT", {
     type: 'CREATE_CLAIM_VOTING_ACCOUNT',
     data: {
-      claimUid: "4a0102",
+      claimUid: "5a01104",
       strategy: {
-        requiredPositives: 2,
-        requiredVotes: 3
+        requiredPositives: 7,
+        requiredVotes: 7
       }
     }
   })
@@ -21,10 +21,10 @@ setTimeout(async () => {
   let txn = await postTransaction("CREATE_CLAIM_VOTING_ACCOUNT", {
     type: 'CREATE_CLAIM_VOTING_ACCOUNT',
     data: {
-      claimUid: "4a0202",
+      claimUid: "5a0103",
       strategy: {
-        requiredPositives: 3,
-        requiredVotes: 5
+        requiredPositives: 8,
+        requiredVotes: 8
       }
     }
   })

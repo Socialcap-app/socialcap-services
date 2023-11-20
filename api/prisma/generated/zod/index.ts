@@ -40,7 +40,7 @@ export const StateScalarFieldEnumSchema = z.enum(['id','label']);
 
 export const TransactionQueueScalarFieldEnumSchema = z.enum(['uid','sequence','queue','type','data','state','receivedUTC','submitedUTC','doneUTC','retries','hash','done','error']);
 
-export const TransactionEventScalarFieldEnumSchema = z.enum(['sequence','type','to','payload','state','emittedUTC']);
+export const TransactionEventScalarFieldEnumSchema = z.enum(['sequence','type','subject','payload','state','emittedUTC']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 
@@ -453,7 +453,7 @@ export type TransactionQueuePartial = z.infer<typeof TransactionQueuePartialSche
 export const TransactionEventSchema = z.object({
   sequence: z.number().int(),
   type: z.string(),
-  to: z.string(),
+  subject: z.string(),
   payload: z.string(),
   state: z.number().int().nullish(),
   emittedUTC: z.coerce.date().nullish(),

@@ -290,7 +290,7 @@ model TransactionEvent {
   // {type, to, payload}
   sequence   Int       @id @unique @default(autoincrement()) // order in which it was received
   type       String    @default("") // type of the message, example; 'update_claim_account_id'
-  to         String    @default("") // the target of the message, or '*' if everyone
+  subject    String    @default("") // the target of the message, or '*' if everyone
   payload    String    @default("{}") // JSON string with the event payload
   state      Int?      @default(9) // WAITING
   emittedUTC DateTime? @default(now()) @map("emitted_utc") // the emitted time

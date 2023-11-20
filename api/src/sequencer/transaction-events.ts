@@ -59,4 +59,4 @@ async function ackTxnEvent(
 
 
 // TODO
-// getTxnEvents(type) // only gets WAITING events of the given type
+// getTxnEventsByType(type) // only gets WAITING events of the given type
