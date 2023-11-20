@@ -3,6 +3,8 @@
  * cycles. We want to avoid excesive/long console.log lines that interrupt 
  * code legibility.
  */
+import { TxnEvent } from "./transaction-events.js";
+import { IError } from "./error-codes.js";
 
 export class SequencerLogger {
 
@@ -36,6 +38,11 @@ export class SequencerLogger {
     console.log(`${dts()}: pendingTxn=${txn.hash()}`);
   }
 
+  static dispatchedTxn(result: any) {
+    const link = `https://berkeley.minaexplorer.com/transaction/${result.hash}`
+    console.log(`${dts()}: hash=${result.hash} ${link}`);
+  }
+
   static retryPending(txn: any) {
     console.log(`${dts()}: retryTxn=${txn.uid} retries=${txn.retries}`);
   }
@@ -44,15 +51,23 @@ export class SequencerLogger {
     console.log(`${dts()}: waiting account ${msg}`);
   }
 
-  static waitingTransaction(txnId: string, elapsed: number, done: any) {
+  static waitingTransaction(hash: string, elapsed: number, done: any) {
     console.log(
-      `${dts()}: waiting txn ${elapsed}secs id=${txnId} done=${!!done}`
+      `${dts()}: waiting txn ${elapsed}secs hash=${hash} done=${!!done}`
       +(done ? ` ${JSON.stringify(done)}` : "")
     );
   }
 
+  static postedEv(ev: TxnEvent) {
+    console.log(`${dts()}: postEvent ${ev.type} to=${ev.to} payload=${JSON.stringify(ev.payload)}`);
+  }
+
   static zkAppInstance(id: string) {
     console.log(`${dts()}: zkApp instance id=${id}`)
+  }
+
+  static error(err: any) {
+    console.log(`${dts()}: ERROR`, err);
   }
 } 
 

@@ -4,12 +4,8 @@ import { Payers } from "./payers.js"
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
 import { RawTxnData,
   SequencerLogger as log, 
-  postTxnEvent, 
-  UNABLE_TO_UPDATE_INDEXDB,
-  hasException,
   AnyDispatcher,
-  UNABLE_TO_POST_TRANSACTION_EVENT,
-  TxnEvent
+  TxnResult
 } from "../sequencer/index.js"
 
 export { CreateClaimVotingAccountDispatcher };
@@ -29,7 +25,7 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
    * @throws exception on failure, will be handled by Sequencer.dispatcher
    */
   async dispatch(txnData: RawTxnData) {
-    // the 'account {id, privateKey}' SHOULD have been generated before 
+    // this data was send by postTransaction
     const { claimUid, strategy } = txnData.data;
     
     const deployer = Payers.DEPLOYER;
@@ -48,7 +44,7 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
     let frv = Field(strategy.requiredVotes);
     let frp = Field(strategy.requiredPositives); 
 
-    const result = await this.proveAndSend(
+    let result = await this.proveAndSend(
       // the transaction 
       () => {
         // IMPORTANT: the deployer account must already be funded 
@@ -65,25 +61,32 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
       [deployer.privateKey, zkappPrivkey]
     );
 
-    // if we were successfull, we need to update the Claim in the IndexDb
-    // so we post a Transaction event to report this
-    if (!result.error) {
-      let ev: TxnEvent = {
-        type: 'claim_zkapp_account_created',
-        to: `claim:${claimUid}`,
-        payload: {
-          claimUid: claimUid,
-          accountId: zkappPubkey.toBase58(),
-          privateKey: zkappPrivkey.toBase58()
-        }        
-      }
-      let updated = await postTxnEvent(ev);
-      if (! updated) {
-        result.error = hasException(UNABLE_TO_POST_TRANSACTION_EVENT, ev);
-        return result;
-      }
+    result.data = {
+      claimUid: claimUid,
+      strategy: strategy,
+      accountId: zkappPubkey.toBase58(),
+      privateKey: zkappPrivkey.toBase58()
     }
 
     return result;
+  }
+
+  async onFinished(
+    txnData: RawTxnData, 
+    result: TxnResult
+  ): Promise<TxnResult> {
+    const { claimUid, accountId, privateKey } = txnData.data;
+    
+    // if we are really finished , we need to post a Transaction event 
+    // to report this so we can latter update the associated Claim
+    return await this.postEvent({
+      type: 'claim_zkapp_account_created',
+      to: `claim:${claimUid}`,
+      payload: {
+        claimUid: claimUid,
+        accountId: accountId,
+        privateKey: privateKey
+      }        
+    }, result);
   }
 }

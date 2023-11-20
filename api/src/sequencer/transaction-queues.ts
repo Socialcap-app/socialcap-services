@@ -27,7 +27,7 @@ interface TxnResult {
   hash: string,
   done: object, // A parsed JSON object
   error?: object,
-  result?: object
+  data?: object // modified txn data
 }
 
 
@@ -56,6 +56,7 @@ class TransactionsQueue {
     this._txRunning = "";
   }
 
+  
   /**
  * Pushes a new transaction to the given Queue. Only the type and the data 
  * are strictly required. All other params are optional.
@@ -85,11 +86,12 @@ class TransactionsQueue {
     };
   }
 
+
   /**
    * Retrieves the first available transaction from the given Queue.
    * @types: the list of allowed types that it should retrieve. This allows 
-   *         us to have more than one sequencer running and each sequencer 
-   *         will be processing just some transaction types and only those. 
+   *  us to have more than one sequencer running and each sequencer will be 
+   *  processing just some transaction types and only those. 
    * @returns Null if no pending transaction in the queue
    */
   async getFirstWaitingTransaction(
@@ -98,7 +100,7 @@ class TransactionsQueue {
     let txs = await prisma.transactionQueue.findMany({
       where: { AND: [
         { queue: this._queue },
-        { state: WAITING }, 
+        { state: {in: [WAITING, REVISION]} }, 
         { retries: {lte: MAX_RETRIES} }
       ]},
       orderBy: { sequence: 'asc'      }
@@ -109,9 +111,12 @@ class TransactionsQueue {
     return {
       uid: tx.uid,
       type: tx.type,
+      state: tx.state,
+      hash: tx.hash,
       data: JSON.parse(tx.data || "{}")
     }
   }
+
 
   /**
    */
@@ -121,12 +126,16 @@ class TransactionsQueue {
   }): Promise<any> {
     let { state, result } = params;
 
-    let data = {
+    let data: any = {
       state: state,
       hash: result?.hash || "",
       done: JSON.stringify(result?.done || '{}'),
       error: JSON.stringify(result?.error || '{}')
     }
+
+    // change the 'data' field if received
+    if (result?.data)
+      data.data = JSON.stringify(result?.data);
 
     let tx = await prisma.transactionQueue.update({
       where: { uid: uid },
@@ -136,10 +145,11 @@ class TransactionsQueue {
     return tx;
   }
 
+
   /**
-   * Changes the state and retries count of the transaction 
-   * so it can be processed again.
-   * @return the updated transaction
+   * Changes the state to WAITING and also the retries count of the transaction
+   * so it can be processed again. 
+   * @returns the updated transaction
    */
   async retryTransaction(
     uid: string,
@@ -160,6 +170,7 @@ class TransactionsQueue {
   
     return txu;
   }
+
 
   /**
    * Closes a given transaction so it will never be processed again. 
@@ -185,6 +196,7 @@ class TransactionsQueue {
     });
   }
 
+
   /**
    * Get just the 'distinct' queues that have pending transactions waiting
    * and ignore all other past queues.
@@ -192,7 +204,7 @@ class TransactionsQueue {
   static async getActiveQueues(): Promise<any> {
     let queues = await prisma.transactionQueue.findMany({
       where: { AND: [
-        { state: WAITING }, 
+        { state: {in: [WAITING, REVISION]} }, 
         { retries: {lt: MAX_RETRIES} }
       ]},
       distinct: ['queue'],
@@ -218,5 +230,3 @@ async function postTransaction(queueId: string, params: {
     .push(params);
   log.postedTxn(tx);
 }
-
-

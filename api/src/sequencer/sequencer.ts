@@ -10,6 +10,10 @@ class Sequencer {
 
   static _queues = new Map<string, TransactionsQueue>;
 
+  // The set of Dispatchers used to submit transactions or actions
+  // for a given type. There is one (and only one) Dispatcher per type.
+   static _dispatchers = new Map<string, any>;
+  
   /**
    * 
    * @returns 
@@ -40,14 +44,24 @@ class Sequencer {
       try {
         Sequencer.dispatch(pendingTx, {
 
+          // the Transaction was submitted to Mina but it has not been included
+          // in a block yet. It is in REVISION state so we have to wait.
+          onRevision: async (result: TxnResult) => {
+            let revisionTx = await queue.closeTransaction(pendingTx.uid, {
+              state: REVISION,
+              result: result
+            })
+  
+            // and we set the queue as free to run other one
+            queue.setNoRunningTx();
+            return;
+          },
+
           // the Action was succesfull so we update the transaction status
           onDone: async (result: TxnResult) => {
             let doneTx = await queue.closeTransaction(pendingTx.uid, {
               state: DONE,
-              result: {
-                hash: result.hash,
-                done: result.done
-              }
+              result: result
             })
   
             // and we set the queue as free to run other one
@@ -57,13 +71,12 @@ class Sequencer {
   
           // the Action has failed BUT anyway must update transaction status
           onFailure: async (result: TxnResult) => {
+            log.error(result.error);
+            result.error = result.error || {};
+
             let failedTx = await queue.closeTransaction(pendingTx.uid, {
               state: FAILED,
-              result: {
-                hash: result.hash || "",
-                done: result.done || {},
-                error: result.error || {},
-              }
+              result: result
             })
   
             // we check if we have some retries left, and increment its count
@@ -93,29 +106,48 @@ class Sequencer {
 
 
   /**
-   * Dispatcher(s)
+   * Dispatch the transaction pending on this queue. It has to deal with the 
+   * different states: WAITING, REVISION, DONE, FAILED. 
    */
   static async dispatch(
     txData: any, 
     callbacks: {
+      onRevision: (result: TxnResult) => void,
       onDone: (result: TxnResult) => void,
       onFailure: (result: TxnResult) => void 
     }
   ) {
-    if (! Dispatchers.has(txData.type))
+    if (! Sequencer._dispatchers.has(txData.type))
       return; // No dispatcher for this type, cant do anything
 
     // get the Dispatcher which will dispatch this Txn type
-    let dispatcher = Dispatchers.get(txData.type);
+    let dispatcher = Sequencer._dispatchers.get(txData.type);
     log.dispatching(txData);
 
     try {
-      let result = await dispatcher.dispatch(txData); 
-      if (result.error)
+      // if a new transaction, need to dispatch it 
+      if (txData.state === WAITING) {
+        let result = await dispatcher.dispatch(txData); 
+        if (result.error)
         throw result;
+      
+        // submitted but it stays on revision
+        log.dispatchedTxn(result);
+        callbacks.onRevision(result);
+      }
 
-      // success !
-      callbacks.onDone(result)
+      // if not included yet, need to wait for it
+      if (txData.state === REVISION) {
+        let result = await dispatcher.waitForInclusion(txData.hash); 
+        if (result.error)
+          throw result;
+
+        // we now can call the onFinished callback
+        result = await dispatcher.onFinished(txData, result);
+
+        // success, we are done with it
+        callbacks.onDone(result);
+      }
     }
     catch (result: any) {
       callbacks.onFailure({
@@ -161,6 +193,22 @@ class Sequencer {
     return [...Sequencer._queues.keys()];
   }
 
+
+  /**
+   * Adds a new dispatcher for a given transaction type. There is one, and 
+   * only one dispatcher per type. Specific dispatchers are derived from the
+   * AnyDispatcher class.
+   * @param name A
+   * @param dispatcher 
+   */
+  static addDispatcher(
+    name: string, 
+    dispatcher: any) 
+  {
+    Sequencer._dispatchers.set(name, dispatcher);
+  }
+
+  
   /**
    * Review queues. We need to take into account the case where some transaction
    * was dispatched, the sequencer was offline and so we could not record the 
