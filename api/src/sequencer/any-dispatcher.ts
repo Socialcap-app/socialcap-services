@@ -1,75 +1,68 @@
 /**
- * Dispatchers
- * Theis is the set of Dispatchers used to submit transactions or actions
- * for a given type. There is one (and only one) Dispatcher per type.
+ * The Dispatchers abstract class which all dispatchers will derive from.
+ * It implements the basic helper methods to be used by this derived classes.
  */
-import { RawTxnData } from "./transaction-queues.js";
+import { PrivateKey, PublicKey, Mina } from "o1js";
+import { RawTxnData, TxnResult } from "./transaction-queues.js";
 import { waitForTransaction } from "./wait-for-transaction.js";
+import { 
+  TRANSACTION_FAILED_EXCEPTION, 
+  TRY_SEND_TRANSACTION_EXCEPTION, 
+  hasException 
+} from "./error-codes.js";
 
-export {
-  AnyDispatcher
-}
+export { AnyDispatcher };
 
 
 abstract class AnyDispatcher {
 
-  onDone: (result: any) => void;
-  onFailure: (error: any) => void;
-  
-  constructor(callbacks: {
-    onDone: (result: any) => void,
-    onFailure: (error: any) => void;
-  }) {
-    this.onDone = callbacks.onDone;
-    this.onFailure = callbacks.onFailure
-  }
-
-  // this must be implemented by derived classes
+  /**
+   * This must be implemented by derived classes and will be called 
+   * by the Sequencer.dispatch method
+   */
   abstract dispatch(txn: RawTxnData): any;
 
-  reportErrorOrWait(
-    pendingTxn: any,
-    params: any
-  ) {
-    if (! pendingTxn.isSuccess) {
-      this.onFailure({
-        error: { code: -1, message: "Could not sign or send transaction" }
-      })
-      return;
-    }
   
-    waitForTransaction(
-      pendingTxn.hash, 
-      params,
-      // on Success
-      (status: any) => { this.onDone({
-        MinaTxId: `${pendingTxn.hash()}`,
-        MinaTxStatus: status,
-        params: params
-      })},
-      // onError
-      (status: any, error: any) => { this.onFailure({
-        MinaTxnId: `${pendingTxn.hash()}`,
-        MinaTxnStatus: status,
-        params: params,
-        error: error
-      })}
-    );
+  /**
+   * Proves and sends the given transaction, and waits for it.
+   * @returns the transaction TxnResult 
+   * @catches exception and sends as a TxnResult (with error) format if failed
+   */
+  async proveAndSend(
+    transaction: () => void,
+    payerPubkey: PublicKey,
+    fee: number,
+    signKeys: PrivateKey[]
+  ): Promise<TxnResult> {
+    try {
+      let txn = await Mina.transaction(
+        { sender:payerPubkey, fee: fee }, 
+        transaction
+      );
+      await txn.prove();
+
+      // allways sign it, just in case it requires signature authorization
+      let pendingTxn = await txn.sign(signKeys).send();
+
+      if (! pendingTxn.isSuccess)
+        return {
+          hash: "",
+          done: {},
+          error: hasException(TRY_SEND_TRANSACTION_EXCEPTION)
+        };
+
+      let result = await waitForTransaction(pendingTxn.hash() as string);
+      if (result.error) 
+        return result; // is in TxnResult format 
+      
+      return result;
+    }
+    catch (err: any) {
+      return {
+        hash: "",
+        done: {},
+        error: hasException(TRY_SEND_TRANSACTION_EXCEPTION, err)
+      }
+    }
   }
-}
-
-
-
-
-function checkTransaction(pendingTx: any) {
-  // check if Tx was success or failed
-  if (!pendingTx.isSuccess) {
-    console.log('Error sending transaction (see above)');
-    // process.exit(0); // we will NOT exit here, but retry latter !!!
-    return false;
-  }
-  console.log(
-    `Waiting for transaction to be included: https://berkeley.minaexplorer.com/transaction/${pendingTx.hash()}`
-  );
-  return true;
 }

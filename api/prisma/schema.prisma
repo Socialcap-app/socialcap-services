@@ -248,13 +248,12 @@ model Batch {
   doneUTC         DateTime? @map("done_utc") // the final processed time
 
   // Mina transactions info 
-  BatchesAccountId String? @default("")  @map("batches_account_id") // The BatchesContract account id
-  BatchReceivedTxnUid String ? @default("")  @map("batch_received_txn_uid") // the batch submited transaction, as stored in TransactionQueues 
-  BatchesCommitedTxnUid String? @default("")  @map("batches_commited_txn_uid") // the merge transsaction, as stored in TransactionQueues 
+  BatchesAccountId      String? @default("") @map("batches_account_id") // The BatchesContract account id
+  BatchReceivedTxnUid   String? @default("") @map("batch_received_txn_uid") // the batch submited transaction, as stored in TransactionQueues 
+  BatchesCommitedTxnUid String? @default("") @map("batches_commited_txn_uid") // the merge transsaction, as stored in TransactionQueues 
 
   @@map("batches")
 }
-
 
 model State {
   id    Int    @id @unique
@@ -262,7 +261,6 @@ model State {
 
   @@map("states")
 }
-
 
 model TransactionQueue {
   // The transactions queue 
@@ -279,8 +277,23 @@ model TransactionQueue {
 
   // MINA transaction info, either final success status or errors 
   // as returned by the Graphql endpoint used to check it
-  MinaTxnId     String @default("") @map("mina_txn_id") // 
-  MinaTxnStatus String @default("") @map("mina_txn_status") // 
+  hash  String @default("") @map("txn_hash") // 
+  done  String @default("") @map("txn_done") // 
+  error String @default("") @map("txn_error") // 
 
   @@map("transaction_queues")
+}
+
+model TransactionEvent {
+  // These are events dispatched by the Sequencer when a Transaction has been 
+  // fully successfull to inform others. The form of an event is:
+  // {type, to, payload}
+  sequence   Int       @id @unique @default(autoincrement()) // order in which it was received
+  type       String    @default("") // type of the message, example; 'update_claim_account_id'
+  to         String    @default("") // the target of the message, or '*' if everyone
+  payload    String    @default("{}") // JSON string with the event payload
+  state      Int?      @default(9) // WAITING
+  emittedUTC DateTime? @default(now()) @map("emitted_utc") // the emitted time
+
+  @@map("transaction_events")
 }

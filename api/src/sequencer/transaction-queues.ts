@@ -13,6 +13,7 @@ export {
   TransactionsQueue, 
   postTransaction,
   RawTxnData, 
+  TxnResult,
   WAITING, REVISION, DONE, FAILED, IGNORED, MAX_RETRIES 
 };
 
@@ -20,6 +21,13 @@ interface RawTxnData {
   uid: string;
   type: string;
   data: any; // A parsed JSON object
+}
+
+interface TxnResult {
+  hash: string,
+  done: object, // A parsed JSON object
+  error?: object,
+  result?: object
 }
 
 
@@ -109,15 +117,15 @@ class TransactionsQueue {
    */
   async updateTransaction(uid: string, params: {
     state?: number,
-    MinaTxnId?: string,
-    MinaTxnStatus?: object
+    result?: TxnResult
   }): Promise<any> {
+    let { state, result } = params;
+
     let data = {
-      state: params.state,
-      MinaTxnId: params.MinaTxnId || "",
-      MinaTxnStatus: (typeof(params.MinaTxnStatus) !== 'string')
-        ? JSON.stringify(params.MinaTxnStatus)
-        : (params.MinaTxnStatus || "")
+      state: state,
+      hash: result?.hash || "",
+      done: JSON.stringify(result?.done || '{}'),
+      error: JSON.stringify(result?.error || '{}')
     }
 
     let tx = await prisma.transactionQueue.update({
@@ -129,7 +137,9 @@ class TransactionsQueue {
   }
 
   /**
-   * 
+   * Changes the state and retries count of the transaction 
+   * so it can be processed again.
+   * @return the updated transaction
    */
   async retryTransaction(
     uid: string,
@@ -138,7 +148,6 @@ class TransactionsQueue {
     let txr = await prisma.transactionQueue.findUnique({
       where: { uid: uid} 
     })
-    console.log("must retry ?", txr!.uid, txr!.state, txr!.retries);
 
     if (txr && txr.retries >= MAX_RETRIES)
       return txr; // we can not retry or change anything
@@ -147,7 +156,7 @@ class TransactionsQueue {
       where: { uid: uid },
       data: { retries: {increment: 1}, state: WAITING },
     })
-    console.log("do retry ", txu!.uid, txu!.state, txu!.retries);
+    log.retryPending(txu);
   
     return txu;
   }
@@ -161,30 +170,19 @@ class TransactionsQueue {
    * and final status as returned by Graphql).
    * 
    * @param uid the transaction Uid that we want to close
-   * @param params { state?, MinatxId?, MinaTxStatus? }
+   * @param params { state, hash, done, error? }
    * @returns the updated Transaction
    */
   async closeTransaction(uid: string, params: {
-    state?: number,
-    MinaTxnId?: string,
-    MinaTxnStatus?: string
+    state: number,
+    result: TxnResult
   }): Promise<any> {
-    params.state = params.state || DONE; // default for close expcept if FAILED
-
-    let data = {
-      state: params.state,
-      MinaTxnId: params.MinaTxnId || "",
-      MinaTxnStatus: (typeof(params.MinaTxnStatus) !== 'string')
-        ? JSON.stringify(params.MinaTxnStatus)
-        : (params.MinaTxnStatus || "")
-    }
-
-    let tx = await prisma.transactionQueue.update({
-      where: { uid: uid },
-      data: data,
-    })
-
-    return tx
+    let { state, result } = params;
+    state = state || DONE; // default for close except if FAILED
+    return await this.updateTransaction(uid, {
+      state: state, 
+      result: result
+    });
   }
 
   /**

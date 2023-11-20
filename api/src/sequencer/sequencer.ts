@@ -1,4 +1,4 @@
-import { TransactionsQueue, WAITING, DONE, FAILED, REVISION, MAX_RETRIES } from "./transaction-queues.js";
+import { TransactionsQueue, TxnResult, WAITING, DONE, FAILED, REVISION, MAX_RETRIES } from "./transaction-queues.js";
 import { Dispatchers } from "./all-dispatchers.js";
 import { SequencerLogger as log } from "./logs.js";
 import { AnyDispatcher } from "./any-dispatcher.js";
@@ -41,11 +41,13 @@ class Sequencer {
         Sequencer.dispatch(pendingTx, {
 
           // the Action was succesfull so we update the transaction status
-          onDone: async (result: any) => {
+          onDone: async (result: TxnResult) => {
             let doneTx = await queue.closeTransaction(pendingTx.uid, {
               state: DONE,
-              MinaTxnId: result.MinaTxnId,
-              MinaTxnStatus: result.MinaTxnStatus
+              result: {
+                hash: result.hash,
+                done: result.done
+              }
             })
   
             // and we set the queue as free to run other one
@@ -54,18 +56,21 @@ class Sequencer {
           },
   
           // the Action has failed BUT anyway must update transaction status
-          onFailure: async (result: any) => {
+          onFailure: async (result: TxnResult) => {
             let failedTx = await queue.closeTransaction(pendingTx.uid, {
               state: FAILED,
-              MinaTxnId: result.MinaTxnId || "",
-              MinaTxnStatus: result.MinaTxnStatus || result.error || "",
+              result: {
+                hash: result.hash || "",
+                done: result.done || {},
+                error: result.error || {},
+              }
             })
   
             // we check if we have some retries left, and increment its count
             // so it can still be processed in the next cycle
             failedTx = await queue.retryTransaction(failedTx.uid, MAX_RETRIES);
   
-            // and we set the queue as free to run it again if can retry
+            // and we set the queue as free to run it again so it can retry
             queue.setNoRunningTx();
             return;
           }
@@ -74,12 +79,12 @@ class Sequencer {
         // if we could send the Transaction it must be reviewed by MINA to 
         // include it in a block. We mark it as REVISION in the queue so it will
         // not be run again
-        pendingTx = await queue.updateTransaction(pendingTx.uid, { 
-          state: REVISION 
-        });
+        // pendingTx = await queue.updateTransaction(pendingTx.uid, { 
+        //   state: REVISION 
+        // });
       } 
       catch(err: any) {
-        console.log("Sequencer dispatc failed ERR=", err);
+        console.log("Sequencer dispatch failed ERR=", err);
       }
     }
 
@@ -90,25 +95,35 @@ class Sequencer {
   /**
    * Dispatcher(s)
    */
-  static dispatch(
+  static async dispatch(
     txData: any, 
     callbacks: {
-      onDone: (result: any) => void,
-      onFailure: (result: any) => void 
+      onDone: (result: TxnResult) => void,
+      onFailure: (result: TxnResult) => void 
     }
   ) {
     if (! Dispatchers.has(txData.type))
       return; // No dispatcher for this type, cant do anything
 
-    let dispatcherClass = Dispatchers.get(txData.type);
-
-    let dispatcher = new dispatcherClass({
-      onDone: callbacks.onDone,
-      onFailure: callbacks.onFailure 
-    })
+    // get the Dispatcher which will dispatch this Txn type
+    let dispatcher = Dispatchers.get(txData.type);
     log.dispatching(txData);
 
-    dispatcher.dispatch(txData); 
+    try {
+      let result = await dispatcher.dispatch(txData); 
+      if (result.error)
+        throw result;
+
+      // success !
+      callbacks.onDone(result)
+    }
+    catch (result: any) {
+      callbacks.onFailure({
+        hash: result.hash || "",
+        done: result.done || {},
+        error: result.error || result
+      });
+    }
   }
 
 

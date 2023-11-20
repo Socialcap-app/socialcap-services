@@ -22,7 +22,6 @@ export async function updateClaimVotes(params: {
   negative: number,
   ignored: number
 }) {
-
   const claim = await prisma.claim.update({
     where: { uid: params.uid },
     data: { 
@@ -36,4 +35,17 @@ export async function updateClaimVotes(params: {
   return claim;
 }
 
+export async function updateClaimAccountId(params: {
+  uid: string,
+  accountId: string
+}) {
+  const claim = await prisma.claim.update({
+    where: { uid: params.uid },
+    data: { 
+      accountId: params.accountId,
+      updatedUTC: (new Date()).toISOString()
+    }
+  })  
 
+  return claim;
+}

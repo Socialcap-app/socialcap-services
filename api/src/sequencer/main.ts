@@ -24,6 +24,10 @@ export function setupSequencer(params: {
     archive: ARCHIVE_URL
   });
   Mina.setActiveInstance(Berkeley);
+
+
+
+  
 }
 
 

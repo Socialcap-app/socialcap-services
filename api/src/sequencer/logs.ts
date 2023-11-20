@@ -25,7 +25,7 @@ export class SequencerLogger {
   }
 
   static postedTxn(txn: any) {
-    console.log(`${dts()}: postTransaction uid=${txn.uid} ${txn.type} data=${txn.data}`);
+    console.log(`${dts()}: postTransaction uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
   }
 
   static dispatching(txn: any) {
@@ -36,8 +36,23 @@ export class SequencerLogger {
     console.log(`${dts()}: pendingTxn=${txn.hash()}`);
   }
 
+  static retryPending(txn: any) {
+    console.log(`${dts()}: retryTxn=${txn.uid} retries=${txn.retries}`);
+  }
+
   static waitingAccount(msg: string) {
-    console.log(`${dts()}: waiting for account ${msg}`);
+    console.log(`${dts()}: waiting account ${msg}`);
+  }
+
+  static waitingTransaction(txnId: string, elapsed: number, done: any) {
+    console.log(
+      `${dts()}: waiting txn ${elapsed}secs id=${txnId} done=${!!done}`
+      +(done ? ` ${JSON.stringify(done)}` : "")
+    );
+  }
+
+  static zkAppInstance(id: string) {
+    console.log(`${dts()}: zkApp instance id=${id}`)
   }
 } 
 

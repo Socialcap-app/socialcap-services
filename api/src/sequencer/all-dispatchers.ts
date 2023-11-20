@@ -16,7 +16,7 @@ const Dispatchers: Map<string, any> = new Map();
 
 function addDispatcher(
   name: string, 
-  dispatcher: AnyDispatcher) 
+  dispatcher: any) 
 {
   Dispatchers.set(name, dispatcher);
 }

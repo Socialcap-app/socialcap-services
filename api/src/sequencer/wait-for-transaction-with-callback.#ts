@@ -1,80 +1,54 @@
 import axios from "axios";
-import { TxnResult } from "./transaction-queues.js";
-import { SequencerLogger as log } from "./logs.js";
-import { 
-  TRANSACTION_FAILED_EXCEPTION,
-  TRANSACTION_WAITING_TIME_EXCEEDED,
-  hasException 
-} from "./error-codes.js";
 
-export { waitForTransaction };
-
+export {
+  waitForTransaction
+}
 
 /**
- * Waits for a transaction success or failure.
- * @param txnId 
- * @returns a TxnResult 
- * @throws does not throw, allways returns a TxnResult
-*/
+ * Waits for a MINA transaction to be included, and after completion it calls
+ * the given callback or error.
+ */
 const INTERVAL = 10000; // every 10 secs
-const MAX_RETRIES = 200; 
 const GRAPHQL_ENDPOINT =  "https://berkeley.graphql.minaexplorer.com/";
 
+
 async function waitForTransaction(
-  txnId: string
-): Promise<TxnResult> {
-  let counter = 0;
+  txnId: string, 
+  params: any, 
+  onSuccess: (status: any) => void,
+  onError: (status: any, error: string) => void
+) {
+  let ts = (new Date()).toISOString();
+  console.log(`${ts} ... waiting for ${txnId} ...`);
 
-  for (;;) {
-    if (counter > MAX_RETRIES) {
-      // break here and return
-      return {
-        hash: txnId,
-        done: {},
-        error: hasException(TRANSACTION_WAITING_TIME_EXCEEDED, {
-          "timeoutAt": counter * INTERVAL
-        })
-      };
-    }
-
+  let timer = setTimeout(async () => {
     let rsp = await queryTxnStatus(txnId);
+    console.log("Txn status=", rsp);
     let done = rsp.error === null ? rsp.data : null;
-    log.waitingTransaction(txnId, counter*INTERVAL/1000, done);
+    console.log(`${ts} Txn ${txnId} pending=`, (!done));
 
     if (done && done.blockHeight && done.failureReason === null) {
       // we can now proceed with whatever does the callback
-      return {
-        hash: txnId,
-        done: done
-      }; 
+      onSuccess(done); 
+      clearTimeout(timer)
+      return;
     }
 
     if (done && done.failureReason !== null) {
-      // this is a Mina error
       let message = (done.failureReason || []).map((t: any) => {
         return t.failures[0];      
       }).join(", ");
 
-      return {
-        hash: txnId,
-        done: done,
-        error: hasException(TRANSACTION_FAILED_EXCEPTION, done.failureReason)
-      };
+      // report error somehow
+      onError(done, `Txn ${txnId} failed: ${message}`);
+      clearTimeout(timer)
+      return;
     }
 
-    if (rsp.error) {
-      // This is an Axios (or other) error
-      return {
-        hash: txnId,
-        done: {},
-        error: hasException(TRANSACTION_FAILED_EXCEPTION, rsp.error)
-      };
-    }
-  
-    // no response ... wait and retry
-    counter++;
-    await new Promise((resolve) => setTimeout(resolve, INTERVAL));
-  }
+    // reschedule 
+    clearTimeout(timer);
+    waitForTransaction(txnId, params, onSuccess, onError);
+  }, INTERVAL) // every 10 secs
 }
 
 
@@ -113,15 +87,14 @@ async function queryTxnStatus(txnId: string): Promise<any> {
     },
     "error": null
     */
-   
-    const answer = response.data?.data?.zkapp;
-    //console.log("queryTxnStatus rsp=", answer);
+   const answer = response.data?.data?.zkapp;
+   console.log("queryTxnStatus rsp=", answer);
     return {
       data: answer,
       error: null,
     };
   } catch (err: any) {
-    //console.log("queryTxnStatus err=", err);
+    console.log("queryTxnStatus err=", err);
     return {
       data: null,
       error: err,
@@ -153,7 +126,7 @@ async function onlyIfMain() {
   let rspPending = await queryTxnStatus("5JtgHzh9sfNdbeFQofXNZ6jTyJAWsJ73tHko4yZVh9sHiTrsHUcH");
   console.log("Response=", JSON.stringify(rspPending,null,2));  
   */
-  /*
+
   waitForTransaction(
     "5JvKrrANa1Vtmpd7XqmHVQu8d8EkjEGesFVsetrMrmDTbTWB0000",
     {},
@@ -186,7 +159,6 @@ async function onlyIfMain() {
       console.log("ERR", err);
     }
   )
-  */
 }
 
 onlyIfMain();

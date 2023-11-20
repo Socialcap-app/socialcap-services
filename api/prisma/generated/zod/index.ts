@@ -38,7 +38,9 @@ export const BatchScalarFieldEnumSchema = z.enum(['uid','sequence','type','metad
 
 export const StateScalarFieldEnumSchema = z.enum(['id','label']);
 
-export const TransactionQueueScalarFieldEnumSchema = z.enum(['uid','sequence','queue','type','data','state','receivedUTC','submitedUTC','doneUTC','retries','MinaTxnId','MinaTxnStatus']);
+export const TransactionQueueScalarFieldEnumSchema = z.enum(['uid','sequence','queue','type','data','state','receivedUTC','submitedUTC','doneUTC','retries','hash','done','error']);
+
+export const TransactionEventScalarFieldEnumSchema = z.enum(['sequence','type','to','payload','state','emittedUTC']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 
@@ -429,8 +431,9 @@ export const TransactionQueueSchema = z.object({
   submitedUTC: z.coerce.date(),
   doneUTC: z.coerce.date().nullish(),
   retries: z.number().int(),
-  MinaTxnId: z.string(),
-  MinaTxnStatus: z.string(),
+  hash: z.string(),
+  done: z.string(),
+  error: z.string(),
 })
 
 export type TransactionQueue = z.infer<typeof TransactionQueueSchema>
@@ -442,3 +445,26 @@ export type TransactionQueue = z.infer<typeof TransactionQueueSchema>
 export const TransactionQueuePartialSchema = TransactionQueueSchema.partial()
 
 export type TransactionQueuePartial = z.infer<typeof TransactionQueuePartialSchema>
+
+/////////////////////////////////////////
+// TRANSACTION EVENT SCHEMA
+/////////////////////////////////////////
+
+export const TransactionEventSchema = z.object({
+  sequence: z.number().int(),
+  type: z.string(),
+  to: z.string(),
+  payload: z.string(),
+  state: z.number().int().nullish(),
+  emittedUTC: z.coerce.date().nullish(),
+})
+
+export type TransactionEvent = z.infer<typeof TransactionEventSchema>
+
+/////////////////////////////////////////
+// TRANSACTION EVENT PARTIAL SCHEMA
+/////////////////////////////////////////
+
+export const TransactionEventPartialSchema = TransactionEventSchema.partial()
+
+export type TransactionEventPartial = z.infer<typeof TransactionEventPartialSchema>

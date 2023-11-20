@@ -1,28 +1,21 @@
-import { Mina, AccountUpdate, PrivateKey, PublicKey } from "o1js";
-import { ClaimVotingContract } from "@socialcap/contracts";
+import { Mina, AccountUpdate, PrivateKey, PublicKey, Field } from "o1js";
+import { ClaimVotingContract, UID } from "@socialcap/contracts";
 import { Payers } from "./payers.js"
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
-import { 
-  waitForAccount,
-  RawTxnData,
-  postTransaction,
+import { RawTxnData,
+  SequencerLogger as log, 
+  postTxnEvent, 
+  UNABLE_TO_UPDATE_INDEXDB,
+  hasException,
   AnyDispatcher,
-  TRY_SEND_TRANSACTION_EXCEPTION,
-  CREATE_ACCOUNT_WAITING_TIME_EXCEEDED,
-  hasException 
+  UNABLE_TO_POST_TRANSACTION_EVENT,
+  TxnEvent
 } from "../sequencer/index.js"
 
 export { CreateClaimVotingAccountDispatcher };
 
 
 class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
-
-  constructor(callbacks: {
-    onDone: (result: any) => void,
-    onFailure: (error: any) => void;
-  }) {
-    super(callbacks);
-  }
 
   /**
    * Creates a new zkApp using the ClaimVotingContract. Each claim has 
@@ -32,87 +25,65 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
    *  account: { id, publickKey, privateKey } keys of the account to create
    *  claimUid: the Uid of the Claim binded to this account
    *  strategy: {requiredVotes,requiredPositives...} params for voting
-   * @returns 
+   * @returns result of successfull transaction
+   * @throws exception on failure, will be handled by Sequencer.dispatcher
    */
   async dispatch(txnData: RawTxnData) {
-    // the 'account' keys SHOULD have been generated before 
-    let { account, claimUid, strategy } = txnData.data;
+    // the 'account {id, privateKey}' SHOULD have been generated before 
+    const { claimUid, strategy } = txnData.data;
     
-    let deployer = Payers.DEPLOYER;
+    const deployer = Payers.DEPLOYER;
 
-    let pendingTxn: any = null;
+    // we ALWAYS compile it
+    await ClaimVotingContract.compile();
 
-    try {
-      // we ALWAYS compile it
-      await ClaimVotingContract.compile();
+    // we need to generate a new key pair for each deploy
+    const zkappPrivkey = PrivateKey.random();
+    const zkappPubkey = zkappPrivkey.toPublicKey();
 
-      // we need to generate a new key pair for each deploy
-      console.log(`zkApp instance address=${account.id}`);
-
-      const accountPublicKey = PublicKey.fromBase58(account.publicKey);
-      const accountPrivateKey = PrivateKey.fromBase58(account.privateKey);
+    let zkApp = new ClaimVotingContract(zkappPubkey);
+    log.zkAppInstance(zkappPubkey.toBase58());
       
-      let zkApp = new ClaimVotingContract(accountPublicKey);
-      console.log("zkApp instance created!");
-      
-      // deploy it 
-      let txn = await Mina.transaction(
-        { sender: deployer.publicKey, fee: DEPLOY_TX_FEE }, () => {
+    let fuid = UID.toField(claimUid);
+    let frv = Field(strategy.requiredVotes);
+    let frp = Field(strategy.requiredPositives); 
+
+    const result = await this.proveAndSend(
+      // the transaction 
+      () => {
         // IMPORTANT: the deployer account must already be funded 
         // or this will fail miserably ughhh
         AccountUpdate.fundNewAccount(deployer.publicKey);
         zkApp.deploy();
-      });
-      await txn.prove();
+        zkApp.claimUid.set(fuid);
+        zkApp.requiredVotes.set(frv);
+        zkApp.requiredPositives.set(frp);
+      }, 
+      // feePayer and fee
+      deployer.publicKey, DEPLOY_TX_FEE,
+      // sign keys
+      [deployer.privateKey, zkappPrivkey]
+    );
 
-      // this tx needs .sign(), because `deploy()` adds an account update 
-      // that requires signature authorization
-      pendingTxn = await txn
-        .sign([deployer.privateKey, accountPrivateKey])
-        .send();
-      console.log("zkApp instance deployed !")
-
-      // creating an account in MINA takes a lot of time (betwwen 3 to 10 mins)
-      // before the account is ready, and we can't do anything until it has been
-      // created, so we must wait !
-      let createdAccount = await waitForAccount(account.id);
-      if (! createdAccount) {
-        // we report the error and finish here, we can not do anything more
-        // except let the Sequencer retry this ... until it succeeds or fails
-        await this.onFailure({
-          MinaTxnId: `${pendingTxn.hash()}`,
-          error: CREATE_ACCOUNT_WAITING_TIME_EXCEEDED
-        });
-        return;
-      }
-
-      // AFTER the account has been created, we need to setup the created 
-      // account with the correct local vars, BEFORE we can start voting. We 
-      // post a transaction to do this.
-      postTransaction(`zkapp:${account.id}`, {
-        type: 'SETUP_CLAIM_VOTING_ACCOUNT',
-        data: {
-          accountId: account.id,
+    // if we were successfull, we need to update the Claim in the IndexDb
+    // so we post a Transaction event to report this
+    if (!result.error) {
+      let ev: TxnEvent = {
+        type: 'claim_zkapp_account_created',
+        to: `claim:${claimUid}`,
+        payload: {
           claimUid: claimUid,
-          strategy: strategy
-        }
-      })        
-
-      // this is done for cleanly closing the dispatch, and getting the full
-      // transaction status, but it will not have to wait because the waiting 
-      // has been done in the waitForAccount: if the account is ready, it means 
-      // the transaction was already included in block. 
-      this.reportErrorOrWait(pendingTxn, {});
-      return;
-    } 
-    catch (except: any) {
-      // this can happen for a number of reasons such as not enough funds
-      // for creating the account, some error in the code, etc. So we just
-      // catch it and report it 
-      await this.onFailure({
-        error: hasException(TRY_SEND_TRANSACTION_EXCEPTION, except.toString())
-      })
-      return;
+          accountId: zkappPubkey.toBase58(),
+          privateKey: zkappPrivkey.toBase58()
+        }        
+      }
+      let updated = await postTxnEvent(ev);
+      if (! updated) {
+        result.error = hasException(UNABLE_TO_POST_TRANSACTION_EVENT, ev);
+        return result;
+      }
     }
+
+    return result;
   }
 }
