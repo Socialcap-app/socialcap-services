@@ -14,7 +14,7 @@ export {
 
 interface TxnEvent {
   type: string;
-  to: string;
+  subject: string;
   payload: object; // A parsed JSON object
 }
 
@@ -30,7 +30,7 @@ async function postTxnEvent(
   let txnEv = await prisma.transactionEvent.create({
     data: {
       type: ev.type, 
-      to: ev.to,
+      subject: ev.subject,
       payload: JSON.stringify(ev.payload),
       emittedUTC: (new Date()).toISOString(),
       state: WAITING

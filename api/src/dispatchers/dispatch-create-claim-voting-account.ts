@@ -55,16 +55,14 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
         zkApp.requiredVotes.set(frv);
         zkApp.requiredPositives.set(frp);
       }, 
-      // feePayer and fee
-      deployer.publicKey, DEPLOY_TX_FEE,
-      // sign keys
-      [deployer.privateKey, zkappPrivkey]
+      deployer.publicKey, DEPLOY_TX_FEE,   // feePayer and fee
+      [deployer.privateKey, zkappPrivkey]  // sign keys
     );
 
     result.data = {
       claimUid: claimUid,
       strategy: strategy,
-      accountId: zkappPubkey.toBase58(),
+      accountId: zkappPubkey.toBase58(), 
       privateKey: zkappPrivkey.toBase58()
     }
 
@@ -76,12 +74,12 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
     result: TxnResult
   ): Promise<TxnResult> {
     const { claimUid, accountId, privateKey } = txnData.data;
-    
+
     // if we are really finished , we need to post a Transaction event 
     // to report this so we can latter update the associated Claim
     return await this.postEvent({
       type: 'claim_zkapp_account_created',
-      to: `claim:${claimUid}`,
+      subject: `claim.${claimUid}`,
       payload: {
         claimUid: claimUid,
         accountId: accountId,

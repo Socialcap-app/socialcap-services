@@ -59,7 +59,7 @@ export class SequencerLogger {
   }
 
   static postedEv(ev: TxnEvent) {
-    console.log(`${dts()}: postEvent ${ev.type} to=${ev.to} payload=${JSON.stringify(ev.payload)}`);
+    console.log(`${dts()}: postEvent ${ev.type} subject=${ev.subject} payload=${JSON.stringify(ev.payload)}`);
   }
 
   static zkAppInstance(id: string) {
