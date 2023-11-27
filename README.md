@@ -1,13 +1,22 @@
-# Socialcap
+# Mina zkApp: Offchain Storage
 
-A community based credentials protocol and zkApp on [MINA](https://minaprotocol.com), focused in solving the challenge of verifying the authenticity of credentials in the digital world.
+This template uses TypeScript.
 
-**Why ?**
+## How to build
 
-With the growing importance of credentials in Web3 communities as both a social and professional "signal" (as demonstrated by the popularity of POAPs and other NFTs used to show wealth or belonging), it's crucial to have a streamlined, trusted and reliable system for validating claims.  
+```sh
+npm run build
+```
 
-Our community-based attestation protocol, complemented by a user-friendly zkApp, enables easy self validation and issuance of credentials using a transparent and repeatable process, while preserving privacy and confidentiality.
+## How to run tests
 
-Unlike other solutions which mainly store and issue credentials but don’t provide a reliable validation process to authenticate them (relying on third parties or Kleros courts), we focus on establishing a trustable and reliable process for validating the authenticity of the claimed credentials and the provided data.
+Node: **Node 19.x** from `nvm use stable`
 
-Our protocol aims to build trust among members, reduce the risk of fraud, and ensure a streamlined, transparent, reliable, and repeatable credential issuing process.
+Install: [Getting Started w/ Typescript](https://www.fastify.io/docs/latest/Reference/TypeScript/)
+
+Commands:
+- `npx prisma generate` : generate prisma client
+- `npx prisma migrate dev`: migrate Db and recreate PrismaClient
+- `npx prisma db seed`: seeding the db
+- `npm run build`: build only
+- `npm run start`: run server
