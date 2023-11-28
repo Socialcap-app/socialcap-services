@@ -6,7 +6,7 @@ import { RawTxnData,
   SequencerLogger as log, 
   AnyDispatcher,
   TxnResult
-} from "../sequencer/index.js"
+} from "../core/index.js"
 
 export { CreateClaimVotingAccountDispatcher };
 

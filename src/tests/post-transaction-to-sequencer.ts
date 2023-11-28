@@ -1,5 +1,5 @@
 import { PrivateKey, PublicKey } from "o1js";
-import { postTransaction } from "../sequencer/index.js";
+import { postTransaction } from "../sequencer/core/index.js";
 
 
 // we need to generate a new key pair for each deploy

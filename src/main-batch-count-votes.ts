@@ -6,7 +6,7 @@ import { findCommunityByName } from "./dbs/community-helpers.js";
 import { findMasterPlanByName } from "./dbs/plan-helpers.js";
 import { getBatchesByPlan } from "./dbs/batch-helpers.js";
 import { updateClaimVotes } from "./dbs/claims-helper.js";
-import { Sequencer } from "./sequencer/sequencer.js";
+import { Sequencer } from "./sequencer/core/sequencer.js";
 
 const COMMUNITY_NAME = 'MINA Navigators Community';
 const PLAN_NAME = 'MINA Navigators Hackaton';

@@ -1,5 +1,5 @@
 import { Mina } from "o1js";
-import { merkleStorage } from "../global.js";
+import { merkleStorage } from "../../global.js";
 import { SequencerLogger as log } from "./logs.js";
 import { Sequencer } from "./sequencer.js";
 

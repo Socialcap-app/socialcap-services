@@ -12,7 +12,7 @@ import {
   TRANSACTION_FAILED_EXCEPTION,
   POST_TRANSACTION_EVENT_FAILED,
   hasException 
-} from "../sequencer/error-codes.js"
+} from "./error-codes.js"
 
 export {
   setupSequencer,

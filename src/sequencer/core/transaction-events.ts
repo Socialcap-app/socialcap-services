@@ -2,7 +2,7 @@
  * Manages posting and retrieval of the Transactionevents.
  * Ideally, we should use something like NATS.io for this.
  */
-import { prisma } from "../global.js";
+import { prisma } from "../../global.js";
 import { WAITING, DONE } from '@socialcap/contracts';
 import { SequencerLogger as log } from "./logs.js";
 

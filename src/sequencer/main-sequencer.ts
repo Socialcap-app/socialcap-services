@@ -1,4 +1,4 @@
-import { setupSequencer, startSequencer } from "./sequencer/index.js";
+import { setupSequencer, startSequencer } from "./core/index.js";
 
 import { CreateClaimVotingAccountDispatcher } from "./dispatchers/dispatch-create-claim-voting-account.js";
 
