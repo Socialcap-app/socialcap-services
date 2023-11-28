@@ -1,4 +1,8 @@
-# Mina zkApp: Offchain Storage
+# Socialcap services
+
+- API services at run-api.ts
+
+- Sequncer service at run-sequencer.ts
 
 This template uses TypeScript.
 
@@ -19,4 +23,8 @@ Commands:
 - `npx prisma migrate dev`: migrate Db and recreate PrismaClient
 - `npx prisma db seed`: seeding the db
 - `npm run build`: build only
-- `npm run start`: run server
+
+Run the services
+
+- `./run-api.sh`: run API server
+- `./run-sequencer.sh`: run Sequencer server

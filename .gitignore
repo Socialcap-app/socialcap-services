@@ -24,6 +24,7 @@ next-env.d.ts
 
 # production
 /build
+build/
 
 # misc
 .DS_Store
@@ -45,6 +46,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+build
 
 # svelte-kit
 .svelte-kit
