@@ -56,14 +56,3 @@ export const VoteRequestTemplate = (alias: string, taskUid: string) =>  `
 <p>This is an automated message, please do not reply.<p>
 <p>© 2023 <a href="https://socialcap.app">Socialcap.app</a>, All Rights Reserved.</p>
 `;
-    // send notifications
-    const mailBody = `
-      Hi there validator,
-
-      You have been assigned task #${task.uid} !
-      Please go to the Socialcap app and open the tab "My tasks".
-      There you can evaluate this claim and emit your vote,
-      Thanks in advance !
-
-      The SocialCap team.
-    `;
