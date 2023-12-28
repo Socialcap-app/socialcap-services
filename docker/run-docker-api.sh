@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # first build it
-sudo docker build -t socialcap/api:run -f ./docker/Dockerfile .
+sudo docker build -t socialcap/api:run -f ./docker/api.Dockerfile .
 
 # stop and remove previous container
 sudo docker rm $(docker stop scapi)

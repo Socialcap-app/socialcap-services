@@ -3,10 +3,14 @@ import { logger, merkleStorage } from "./global.js";
 import { WAITING } from "@socialcap/contracts";
 import { OffchainMerkleStorage } from "./dbs/offchain-merkle-storage.js";
 import { findCommunityByName } from "./dbs/community-helpers.js";
-import { findMasterPlanByName } from "./dbs/plan-helpers.js";
+import { findMasterPlanByName, getMasterPlan } from "./dbs/plan-helpers.js";
 import { getBatchesByPlan } from "./dbs/batch-helpers.js";
-import { updateClaimVotes } from "./dbs/claims-helper.js";
-import { Sequencer } from "./sequencer/core/sequencer.js";
+import { updateClaimVotes } from "./dbs/claim-helpers.js";
+import { Sequencer } from "./sequencer/core/index.js";
+import { 
+  CREATE_CLAIM_VOTING_ACCOUNT, 
+  SEND_CLAIM_VOTE 
+} from "./sequencer/dispatchers/index.js";
 
 const COMMUNITY_NAME = 'MINA Navigators Community';
 const PLAN_NAME = 'MINA Navigators Hackaton';
@@ -94,76 +98,55 @@ async function run(communityName: string, planName: string) {
 
   console.log("\n\n\nFinal count Claim + - 0");
   Object.keys(collector).forEach(async (key) => {
-    let t = collector[key];
-    console.log(`Claim ${t.uid}  Y=${t.positive} N=${t.negative} A=${t.ignored}`);
+    // 
+    let collected = collector[key];
+    console.log(`Claim ${collected.uid} Y=${collected.positive} N=${collected.negative} A=${collected.ignored}`);
 
     let claim = await updateClaimVotes({
-      uid: t.uid,
-      positive: t.positive,
-      negative: t.negative,
-      ignored: t.ignored
+      uid: collected.uid,
+      positive: collected.positive,
+      negative: collected.negative,
+      ignored: collected.ignored
     })
 
+    let plan = await getMasterPlan(claim.planUid);
+
     // Now submit transactions to MINA 
-    // the queue name will be the publicKey of the account, so that all 
-    // the transactions we send tothis account can end in the same queue
-    // and be processed in the order they were received
-    let qName = `${claim.accountId}` || "";  
+    // the queue name will be the Claim+UID, so that all the transactions 
+    // we send to this voting account can end in the same queue
+    // and be processed in the correct order they were received
+    let qName = `claim-voting-${claim.uid}`;  
 
-    // we have to create the Account in MINA
+    // if it has not been already created we have to create the 
+    // ClaimVoting account in MINA
     if (! claim.accountId) {
       /*
-      let { publicKey, privateKey }  = ClaimsVotingFactory.genKeys();
-      qName = `zkapp:%{publickKey}`
-
       Sequencer.postTransaction(qName, {
-        type: 'CREATE_CLAIM_VOTING_ACCOUNT',
+        type: CREATE_CLAIM_VOTING_ACCOUNT,
         data: {
           claimUid: claim.uid,
-          accountId: publicKey, 
-          strategy: plan?.strategy,
+          strategy: plan!.strategy,
         }
       })
       */
     }
 
-    // we now send the votes
-    if (! claim.accountId) {
+    // we now add the votes to the Sequencer Claim-Uid queue so they
+    // can be processed in the right order in which they were received
+    for (let j=0; j < (collected.votes || []).length; j++) {
+      let voted = collected[j];
       /*
-      let { publicKey, privateKey }  = ClaimsVotingFactory.genKeys();
-      qName = `zkapp:%{publickKey}`
-
       Sequencer.postTransaction(qName, {
-        type: 'SEND_CLAIM_VOTE',
+        type: SEND_CLAIM_VOTE,
         data: {
           claimUid: claim.uid,
-          electorPuk: votes.elector
-          result: vote.result
+          electorPuk: voted.elector,
+          result: voted.result
         }
       })
       */
     }
-
-    // we rollup all votes now
-    // TODO ! It crashes if more than 5 votes
-
   })
-
-  // send the Tx to MINA for zkApp.updateNullifier()
-  // we dont really need this ? 
-  /*
-  await MinaService.updateNullifierRoot(
-    nullifier, 
-    nullifierUpdate,
-    { electors: electors, claim: claim },
-    async (params: any) => { return ; }, // done !
-    (params: any, error: any) => {
-      // nothing we can do ... we just log it
-      logger.error(`updateNullifier root failed err=${error.toString()}`);
-    }
-  )
-  */
-
 }
 
 
