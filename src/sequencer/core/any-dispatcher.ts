@@ -50,7 +50,7 @@ abstract class AnyDispatcher {
     txData: RawTxnData, 
     result: TxnResult
   ): Promise<TxnResult>;
-  
+
   /**
    * Proves and sends the given transaction, but it does NOT wait for it !
    * @param transactionFn the transaction function to execute, 

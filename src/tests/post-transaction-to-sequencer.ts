@@ -8,7 +8,7 @@ setTimeout(async () => {
   let txn = await Sequencer.postTransaction("CREATE_CLAIM_VOTING_ACCOUNT", {
     type: 'CREATE_CLAIM_VOTING_ACCOUNT',
     data: {
-      claimUid: "5a01104",
+      claimUid: "6a01103",
       strategy: {
         requiredPositives: 7,
         requiredVotes: 7
@@ -21,7 +21,7 @@ setTimeout(async () => {
   let txn = await Sequencer.postTransaction("CREATE_CLAIM_VOTING_ACCOUNT", {
     type: 'CREATE_CLAIM_VOTING_ACCOUNT',
     data: {
-      claimUid: "5a0103",
+      claimUid: "6b0104",
       strategy: {
         requiredPositives: 8,
         requiredVotes: 8

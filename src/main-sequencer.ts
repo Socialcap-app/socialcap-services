@@ -17,8 +17,8 @@ setupSequencer({
   // we need to instantiate all needed dispatchers, 
   // we will have just one instance for each dispatcher class
   dispatchers: [
-    CreateClaimVotingAccountDispatcher,
-    SendClaimVoteDispatcher
+    (new CreateClaimVotingAccountDispatcher()),
+    (new SendClaimVoteDispatcher())
   ]
 })
 

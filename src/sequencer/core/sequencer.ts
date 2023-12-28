@@ -1,5 +1,4 @@
-import { TransactionsQueue, TxnResult, WAITING, DONE, FAILED, REVISION, MAX_RETRIES, RETRY, UNRESOLVED } from "./transaction-queues.js";
-import { postTransaction } from "./transaction-queues.js";
+import { TransactionsQueue, TxnResult, WAITING, REVISION } from "./transaction-queues.js";
 import { SequencerLogger as log } from "./logs.js";
 
 export { Sequencer };
@@ -73,15 +72,15 @@ class Sequencer {
       if (txData.state === WAITING) {
         let result = await dispatcher.dispatch(txData); 
 
-        // failed: there is some irrecoverable error and can do nothing 
+        // UNSOLVED: there is some irrecoverable error and can do nothing 
         if (result.error) {
-          await Sequencer.onTxnUnresolvedError(queue, txData, result);
+          await Sequencer.txnUnresolvedError(queue, txData, result);
           return;
         }
       
         // success: was submitted and goes to revision for inclusion
         log.dispatchedTxn(result);
-        await Sequencer.onTxnRevision(queue, txData, result);
+        await Sequencer.txnRevision(queue, txData, result);
         return;        
       }
 
@@ -89,115 +88,124 @@ class Sequencer {
       if (txData.state === REVISION) {
         let result = await dispatcher.waitForInclusion(txData.hash); 
 
-        // failed
+        // FAILED: but let's see if we can still retry
         let max = dispatcher.maxRetries();
         if (result.error) {
-          // let's see if we can still retry
-          let canRetry = await Sequencer.onTxnRetry(queue, txData, max, result);
-          if (canRetry)
+          let retryTxn = await Sequencer.txnRetry(queue, txData, max, result);
+          if (retryTxn)
             return;
 
-          // fully failed, no more retries
-          await Sequencer.onTxnFailure(queue, txData, result);
+          // FULLY FAILED, no more retries
+          await Sequencer.txnFailure(queue, txData, result);
 
-          // and call the onFailure callback with this result
-          result = await dispatcher.onFailure(txData, result);
+          // we now can try the onFailure callback with this result
+          // we need to trap this because it is not a Sequencer error
+          // but an specific dispatcher error
+          try {
+            result = await dispatcher.onFailure(txData, result);
+          }
+          catch (err) {
+            log.error(`Dispatcher.onFailure failed err=${err}`)
+          }
         }
 
-        // success ! and are done with it
-        await Sequencer.onTxnDone(queue, txData, result);
+        // SUCCESS: and are done with it
+        await Sequencer.txnDone(queue, txData, result);
 
-        // we now can call the onSucess callback
-        result = await dispatcher.onSuccess(txData, result);
+        // we now can try the onSuccess callback
+        // we need to trap this because it is not a Sequencer error
+        // but an specific dispatcher error
+        try {
+          result = await dispatcher.onSuccess(txData, result);
+        }
+        catch (err) {
+          log.error(`Dispatcher.onSuccess failed err=${err}`)
+        }
       }
     }
     catch (result: any) {
-      await Sequencer.onTxnUnresolvedError(queue, txData, result);
+      await Sequencer.txnUnresolvedError(queue, txData, {
+        hash: result.hash || "",
+        done: result.done || {},
+        error: result.error || result
+      });
       return;
     }
   }
 
-
   // Send failed and we cant do anything to solve this
   // probably is a code error that raised an exception
-  static async onTxnUnresolvedError(
+  static async txnUnresolvedError(
     queue: TransactionsQueue, 
     pendingTxn: any, 
     result: TxnResult
   ) {
-    let revisionTx = await queue.closeTransaction(pendingTxn.uid, {
-      state: UNRESOLVED,
+    let unresolvedTx = await queue.closeUnresolvedTransaction(pendingTxn.uid, {
       result: result
     })
     queue.setNoRunningTx(); // free to run other one
-    return;
+    return unresolvedTx;
   };
 
   // the Transaction was submitted to Mina but it has not been included
   // in a block yet. It is in REVISION state so we have to wait.
-  static async onTxnRevision(
+  static async txnRevision(
     queue: TransactionsQueue, 
     pendingTxn: any, 
     result: TxnResult
   ) {
-    let revisionTx = await queue.closeTransaction(pendingTxn.uid, {
-      state: REVISION,
+    let revisionTx = await queue.closeRevisionTransaction(pendingTxn.uid, {
       result: result
     })
     queue.setNoRunningTx(); // free to run other one
-    return;
+    return revisionTx;
   };
 
   // the Action was succesfull so we update the transaction status
-  static async onTxnDone(
+  static async txnDone(
     queue: TransactionsQueue, 
     pendingTxn: any, 
     result: TxnResult
   ) {
-    let doneTx = await queue.closeTransaction(pendingTxn.uid, {
-      state: DONE,
+    let doneTx = await queue.closeSuccessTransaction(pendingTxn.uid, {
       result: result
     })
     queue.setNoRunningTx(); // free to run other one
-    return;
+    return doneTx;
   };
 
   // the Action has failed BUT anyway must update transaction status
-  static async onTxnFailure(
+  static async txnFailure(
     queue: TransactionsQueue, 
     pendingTxn: any, 
     result: TxnResult
   ) {
     log.error(result.error);
     result.error = result.error || {};
-    let failedTx = await queue.closeTransaction(pendingTxn.uid, {
-      state: FAILED,
+    let failedTx = await queue.closeFailedTransaction(pendingTxn.uid, {
       result: result
     })
     queue.setNoRunningTx(); // free to run other one
-    return;
+    return failedTx;
   }
 
   // the Action has failed BUT we may retry it
-  static async onTxnRetry(
+  static async txnRetry(
     queue: TransactionsQueue, 
     pendingTxn: any, 
     maxRetries: number,
     result: TxnResult
-  ): Promise<boolean> {
+  ): Promise<any> {
     log.error(result.error);
     // we check if we have some retries left, and increment its count
     // so it can still be processed in the next cycle
     let retries = await queue.getTransactionRetries(pendingTxn.uid);
-    if (retries < maxRetries) {
-      let retryTx = await queue.retryTransaction(pendingTxn.uid, {
-        MAX_RETRIES: maxRetries, 
-        state: WAITING
-      });
+    if (retries <= maxRetries) {
+      let retryTx = await queue.retryTransaction(pendingTxn.uid);
       queue.setNoRunningTx(); // free to run other one
-      return true;
+      return retryTx;
     } 
-    return false;
+    return null;
   }
 
 

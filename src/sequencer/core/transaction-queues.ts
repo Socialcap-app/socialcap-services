@@ -124,12 +124,15 @@ class TransactionsQueue {
 
 
   /**
+   * Updates a given transaction using the state, result and optional params. 
+   * Is used by the other closeXXXTransaction methods.
    */
   async updateTransaction(uid: string, params: {
     state?: number,
-    result?: TxnResult
+    result?: TxnResult,
+    doneUTC?: string
   }): Promise<any> {
-    let { state, result } = params;
+    let { state, result, doneUTC } = params;
 
     let data: any = {
       state: state,
@@ -139,45 +142,32 @@ class TransactionsQueue {
     }
 
     // change the 'data' field if received
-    if (result?.data)
-      data.data = JSON.stringify(result?.data);
+    if (result?.data) data.data = JSON.stringify(result?.data);
+
+    // only if it is finished
+    if (doneUTC) data.doneUTC = doneUTC;     
 
     let tx = await prisma.transactionQueue.update({
       where: { uid: uid },
       data: data,
     })
-  
     return tx;
   }
 
 
   /**
-   * Changes the state to WAITING and also the retries count of the transaction
-   * so it can be processed again. 
+   * Retries a given transaction by setting the state to WAITING and the retries 
+   * count of the transaction so it can be processed again. 
    * @returns the updated transaction
    */
-  async retryTransaction(uid: string, params: {
-    state: number,
-    MAX_RETRIES: number
-  }): Promise<any> {
-    let { MAX_RETRIES, state } = params;
-    
-    let txr = await prisma.transactionQueue.findUnique({
-      where: { uid: uid} 
-    })
-
-    if (txr && txr.retries >= MAX_RETRIES)
-      return txr; // we can not retry or change anything
-
+  async retryTransaction(uid: string): Promise<any> {
     let txu = await prisma.transactionQueue.update({
       where: { uid: uid },
-      data: { retries: {increment: 1}, state: state },
+      data: { retries: {increment: 1}, state: WAITING },
     })
     log.retryPending(txu);
-  
     return txu;
   }
-
 
   async getTransactionRetries(
     uid: string
@@ -188,6 +178,7 @@ class TransactionsQueue {
     return txr?.retries || 0;
   }
 
+
   /**
    * Closes a given transaction so it will never be processed again. 
    * The transaction can be closed because it was succesful, or because it
@@ -197,21 +188,52 @@ class TransactionsQueue {
    * and final status as returned by Graphql).
    * 
    * @param uid the transaction Uid that we want to close
-   * @param params { state, hash, done, error? }
+   * @param params { result, doneUTC? }
    * @returns the updated Transaction
    */
-  async closeTransaction(uid: string, params: {
-    state: number,
+
+  async closeUnresolvedTransaction(uid: string, params: {
     result: TxnResult
   }): Promise<any> {
-    let { state, result } = params;
-    state = state || DONE; // default for close except if FAILED
+    let { result } = params;
     return await this.updateTransaction(uid, {
-      state: state, 
-      result: result
+      state: UNRESOLVED, 
+      result: result,
+      doneUTC: (new Date()).toISOString()
     });
   }
 
+  async closeFailedTransaction(uid: string, params: {
+    result: TxnResult
+  }): Promise<any> {
+    let { result } = params;
+    return await this.updateTransaction(uid, {
+      state: FAILED, 
+      result: result,
+      doneUTC: (new Date()).toISOString()
+    });
+  }
+
+  async closeSuccessTransaction(uid: string, params: {
+    result: TxnResult
+  }): Promise<any> {
+    let { result } = params;
+    return await this.updateTransaction(uid, {
+      state: DONE, 
+      result: result,
+      doneUTC: (new Date()).toISOString()
+    });
+  }
+
+  async closeRevisionTransaction(uid: string, params: {
+    result: TxnResult
+  }): Promise<any> {
+    let { result } = params;
+    return await this.updateTransaction(uid, {
+      state: REVISION, 
+      result: result
+    });
+  }
 
   /**
    * Get just the 'distinct' queues that have pending transactions waiting

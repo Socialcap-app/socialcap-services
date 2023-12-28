@@ -9,7 +9,7 @@ const INTERVAL = 5000; // every 5 secs
 export function setupSequencer(params: {
   dispatchers: any[]
 }) {
-  console.log("\nRun on Mina.Berkeley");
+  log.info("Run Sequencer over Mina.Berkeley");
   const 
     BERKELEY_URL = 'https://proxy.berkeley.minaexplorer.com/graphql',
     ARCHIVE_URL = 'https://archive.berkeley.minaexplorer.com/';
@@ -21,12 +21,11 @@ export function setupSequencer(params: {
   
   Mina.setActiveInstance(Berkeley);
   
-  console.log("\nSetting ip dispatchers");
-  (params.dispatchers || []).forEach((t) => {
-    const dispatcher = new t();
+  log.info("Setting ip dispatchers");
+  (params.dispatchers || []).forEach((dispatcher) => {
     const name = dispatcher.name();
     Sequencer.addDispatcher(name, dispatcher);
-    console.log(`Dispatcher: ${name}`)
+    log.info(`Added dispatcher ${name}`)
   })
 }
 

@@ -113,41 +113,26 @@ async function run(communityName: string, planName: string) {
 
     // we have to create the Account in MINA
     if (! claim.accountId) {
-      /*
-      let { publicKey, privateKey }  = ClaimsVotingFactory.genKeys();
-      qName = `zkapp:%{publickKey}`
-
       Sequencer.postTransaction(qName, {
         type: 'CREATE_CLAIM_VOTING_ACCOUNT',
         data: {
           claimUid: claim.uid,
-          accountId: publicKey, 
           strategy: plan?.strategy,
         }
       })
-      */
     }
 
     // we now send the votes
-    if (! claim.accountId) {
-      /*
-      let { publicKey, privateKey }  = ClaimsVotingFactory.genKeys();
-      qName = `zkapp:%{publickKey}`
-
+    if (claim.accountId) {
       Sequencer.postTransaction(qName, {
         type: 'SEND_CLAIM_VOTE',
         data: {
           claimUid: claim.uid,
-          electorPuk: votes.elector
+          electorPuk: votes.elector,
           result: vote.result
         }
       })
-      */
     }
-
-    // we rollup all votes now
-    // TODO ! It crashes if more than 5 votes
-
   })
 
   // send the Tx to MINA for zkApp.updateNullifier()

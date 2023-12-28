@@ -19,19 +19,19 @@ export class SequencerLogger {
   }
 
   static running(qnames?: string[]) {
-    console.log(`${dts()}: Sequencer.run, queues=${JSON.stringify(qnames || '[]')}`);
+    console.log(`${dts()}: Sequencer.run queues=${JSON.stringify(qnames || '[]')}`);
   }
 
   static activeQueue(q: any) {
-    console.log(`${dts()}: queue name=${q._queue} running=${q._txRunning || "NO"}`)
+    console.log(`${dts()}: Sequencer.run activeQueue name=${q._queue} runningTxn=${q._txRunning || "NO"}`)
   }
 
   static postedTxn(txn: any) {
-    console.log(`${dts()}: postTransaction uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
+    console.log(`${dts()}: Sequencer.postTransaction uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
   }
 
   static dispatching(txn: any) {
-    console.log(`${dts()}: dispatch uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
+    console.log(`${dts()}: Sequencer.dispatch uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
   }
 
   static pendingTxn(txn: any) {
@@ -40,11 +40,11 @@ export class SequencerLogger {
 
   static dispatchedTxn(result: any) {
     const link = `https://berkeley.minaexplorer.com/transaction/${result.hash}`
-    console.log(`${dts()}: hash=${result.hash} ${link}`);
+    console.log(`${dts()}: Sequencer.dispatch dispatchedTxn hash=${result.hash} url=${link}`);
   }
 
   static retryPending(txn: any) {
-    console.log(`${dts()}: retryTxn=${txn.uid} retries=${txn.retries}`);
+    console.log(`${dts()}: Sequencer.dispatch txnRetry uid=${txn.uid} retries=${txn.retries}`);
   }
 
   static waitingAccount(msg: string) {
@@ -53,7 +53,7 @@ export class SequencerLogger {
 
   static waitingTransaction(hash: string, elapsed: number, done: any) {
     console.log(
-      `${dts()}: waiting txn ${elapsed}secs hash=${hash} done=${!!done}`
+      `${dts()}: Dispatcher.waitForInclusion, txn ${elapsed}secs hash=${hash} done=${!!done}`
       +(done ? ` ${JSON.stringify(done)}` : "")
     );
   }
@@ -63,11 +63,15 @@ export class SequencerLogger {
   }
 
   static zkAppInstance(id: string) {
-    console.log(`${dts()}: zkApp instance id=${id}`)
+    console.log(`${dts()}: Dispatcher.dispatch zkAppInstance id=${id}`)
   }
 
   static error(err: any) {
-    console.log(`${dts()}: ERROR`, err);
+    console.log(`${dts()}: ERROR `, err);
+  }
+
+  static info(msg: any) {
+    console.log(`${dts()}: INFO `, msg);
   }
 } 
 

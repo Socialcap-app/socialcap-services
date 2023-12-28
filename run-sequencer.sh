@@ -2,4 +2,4 @@
 
 npm run build
 
-node build/src/sequencer/main-sequencer.js
+node build/src/main-sequencer.js

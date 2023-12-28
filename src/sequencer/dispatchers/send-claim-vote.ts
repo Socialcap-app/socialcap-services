@@ -1,5 +1,6 @@
 import { Mina, AccountUpdate, PrivateKey, PublicKey, Field } from "o1js";
-import { ClaimVotingContract, UID } from "@socialcap/contracts";
+import { ClaimVotingContract } from "@socialcap/claim-voting";
+import { UID } from "@socialcap/contracts-lib";
 import { Payers } from "./payers.js"
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
 import { RawTxnData,
@@ -13,7 +14,7 @@ export { SendClaimVoteDispatcher };
 
 class SendClaimVoteDispatcher extends AnyDispatcher {
 
-  static uname = 'CREATE_CLAIM_VOTING_ACCOUNT';
+  static uname = 'SEND_CLAIM_VOTES';
 
   name(): string { 
     return SendClaimVoteDispatcher.uname; 
@@ -36,7 +37,7 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
    */
   async dispatch(txnData: RawTxnData) {
     // this data was send by postTransaction
-    const { claimUid, strategy } = txnData.data;
+    const { claimUid, vote } = txnData.data;
     
     const deployer = Payers.DEPLOYER;
 

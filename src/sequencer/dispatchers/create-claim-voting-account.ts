@@ -1,9 +1,10 @@
 import { Mina, AccountUpdate, PrivateKey, PublicKey, Field } from "o1js";
-import { ClaimVotingContract, UID } from "@socialcap/contracts";
+import { ClaimVotingContract } from "@socialcap/claim-voting";
+import { UID } from "@socialcap/contracts-lib";
 import { Payers } from "./payers.js"
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
 import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult } from "../core/index.js"
-
+import { updateClaimAccountId } from "../../dbs/claim-helpers.js";
 export { CreateClaimVotingAccountDispatcher };
 
 
@@ -84,25 +85,19 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
     txnData: RawTxnData, 
     result: TxnResult
   ): Promise<TxnResult> {
+    // if we are really finished , we need to update the associated accountId
     const { claimUid, accountId } = txnData.data;
-
-    // if we are really finished , we need to update the associated Claim
-    return await this.postEvent({
-      type: 'claim_zkapp_account_created',
-      subject: `claim.${claimUid}`,
-      payload: {
-        claimUid: claimUid,
-        accountId: accountId,
-        // privateKey: privateKey
-      }        
-    }, result);
+    await updateClaimAccountId({ uid: claimUid, accountId: accountId });
+    return result;
   }
-
+  
   async onFailure(
     txnData: RawTxnData, 
     result: TxnResult
   ): Promise<TxnResult> {
+    // if failed, we set the accountId to empty string to mark it as unusable
     const { claimUid, accountId } = txnData.data;
+    await updateClaimAccountId({ uid: claimUid, accountId: ""});
     return result;
   }
 }
