@@ -2,10 +2,16 @@
  * Manages storage and retrieval of the Transactions Queue involving MINA
  */
 import { prisma } from "../../global.js";
-import { UID, WAITING, DONE, IGNORED, REVISION } from '@socialcap/contracts';
+import { UID } from '@socialcap/contracts';
 import { SequencerLogger as log } from "./logs.js";
 
-const FAILED = 13;
+const 
+  WAITING = 101,
+  REVISION = 102,
+  DONE = 103,
+  RETRY = 104,
+  FAILED = 105,
+  UNRESOLVED = 106;
 
 const MAX_RETRIES = 2; // in fact we try 3 times: the first one and 2 more retries
 
@@ -14,7 +20,7 @@ export {
   postTransaction,
   RawTxnData, 
   TxnResult,
-  WAITING, REVISION, DONE, FAILED, IGNORED, MAX_RETRIES 
+  WAITING, REVISION, DONE, FAILED, RETRY, UNRESOLVED, MAX_RETRIES 
 };
 
 interface RawTxnData {
@@ -101,7 +107,6 @@ class TransactionsQueue {
       where: { AND: [
         { queue: this._queue },
         { state: {in: [WAITING, REVISION]} }, 
-        { retries: {lte: MAX_RETRIES} }
       ]},
       orderBy: { sequence: 'asc'      }
     })
@@ -151,10 +156,12 @@ class TransactionsQueue {
    * so it can be processed again. 
    * @returns the updated transaction
    */
-  async retryTransaction(
-    uid: string,
+  async retryTransaction(uid: string, params: {
+    state: number,
     MAX_RETRIES: number
-  ): Promise<any> {
+  }): Promise<any> {
+    let { MAX_RETRIES, state } = params;
+    
     let txr = await prisma.transactionQueue.findUnique({
       where: { uid: uid} 
     })
@@ -164,13 +171,22 @@ class TransactionsQueue {
 
     let txu = await prisma.transactionQueue.update({
       where: { uid: uid },
-      data: { retries: {increment: 1}, state: WAITING },
+      data: { retries: {increment: 1}, state: state },
     })
     log.retryPending(txu);
   
     return txu;
   }
 
+
+  async getTransactionRetries(
+    uid: string
+  ): Promise<number> {
+    let txr = await prisma.transactionQueue.findUnique({
+      where: { uid: uid} 
+    })
+    return txr?.retries || 0;
+  }
 
   /**
    * Closes a given transaction so it will never be processed again. 

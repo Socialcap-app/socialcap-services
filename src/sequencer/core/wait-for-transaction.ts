@@ -7,7 +7,9 @@ import {
   hasException 
 } from "./error-codes.js";
 
-export { waitForTransaction };
+export { 
+  waitForTransaction 
+};
 
 
 /**

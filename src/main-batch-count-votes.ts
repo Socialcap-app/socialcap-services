@@ -5,8 +5,9 @@ import { OffchainMerkleStorage } from "./dbs/offchain-merkle-storage.js";
 import { findCommunityByName } from "./dbs/community-helpers.js";
 import { findMasterPlanByName } from "./dbs/plan-helpers.js";
 import { getBatchesByPlan } from "./dbs/batch-helpers.js";
-import { updateClaimVotes } from "./dbs/claims-helper.js";
+import { updateClaimVotes } from "./dbs/claim-helpers.js";
 import { Sequencer } from "./sequencer/core/sequencer.js";
+import { CreateClaimVotingAccountDispatcher } from "./sequencer/dispatchers/create-claim-voting-account.js";
 
 const COMMUNITY_NAME = 'MINA Navigators Community';
 const PLAN_NAME = 'MINA Navigators Hackaton';

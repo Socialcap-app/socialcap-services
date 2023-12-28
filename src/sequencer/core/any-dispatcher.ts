@@ -19,6 +19,15 @@ export { AnyDispatcher };
 
 abstract class AnyDispatcher {
 
+  abstract name(): string;
+
+  /**
+   * Checks if the dispatcher action can be retried again. 
+   * it can return 0 if no retries are allowed, otherwise 
+   * must return the max number of allowed retries.
+   */
+  abstract maxRetries(): number;
+
   /**
    * This must be implemented by derived classes and will be called 
    * by the Sequencer.dispatch method to send a new transaction to Mina.
@@ -27,27 +36,30 @@ abstract class AnyDispatcher {
     txData: RawTxnData
   ): Promise<any>;
 
-
   /**
-   * This callback will be set by the derived class and called by the 
+   * This callbacks will be set by the derived class and called by the 
    * Dispatcher when the transaction is really finished, so we can run 
    * additional actions after it.
    */ 
-  abstract onFinished(
+  abstract onSuccess(
     txData: RawTxnData, 
     result: TxnResult
   ): Promise<TxnResult>;
 
+  abstract onFailure(
+    txData: RawTxnData, 
+    result: TxnResult
+  ): Promise<TxnResult>;
   
   /**
    * Proves and sends the given transaction, but it does NOT wait for it !
-   * @param transaction the transaction function to execute, which will be 
-   *  used by the MINA.transaction call
+   * @param transactionFn the transaction function to execute, 
+   *    which will be used by the MINA.transaction call
    * @returns the transaction TxnResult 
    * @catches exception and sends as a TxnResult (with error) format if failed
    */
   async proveAndSend(
-    transaction: () => void,
+    transactionFn: () => void,
     payerPubkey: PublicKey,
     fee: number,
     signKeys: PrivateKey[]
@@ -55,12 +67,13 @@ abstract class AnyDispatcher {
     try {
       let txn = await Mina.transaction(
         { sender:payerPubkey, fee: fee }, 
-        transaction
+        transactionFn
       );
       await txn.prove();
 
-      // allways sign it, just in case it requires signature authorization
-      let pendingTxn = await txn.sign(signKeys).send();
+      let pendingTxn = signKeys.length 
+        ? await txn.sign(signKeys).send()
+        : await txn.send();
 
       if (! pendingTxn.isSuccess) 
         return {
@@ -84,7 +97,6 @@ abstract class AnyDispatcher {
     }
   }
 
-
   /**
    * Waits that the already dispatched transaction is included in a block.
    * @returns the transaction TxnResult 
@@ -105,7 +117,6 @@ abstract class AnyDispatcher {
       }
     }
   }
-
 
   /**
    * Post and event to the TransactioEvents queue. It receives the TxnResult

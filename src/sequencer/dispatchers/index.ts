@@ -1,6 +1,5 @@
 import { CreateClaimVotingAccountDispatcher } from "./create-claim-voting-account.js";
-import { SendClaimVoteDispatcher
- } from "./send-claim-vote.js";
+import { SendClaimVoteDispatcher } from "./send-claim-vote.js";
 const 
   CREATE_CLAIM_VOTING_ACCOUNT = 'CREATE_CLAIM_VOTING_ACCOUNT',
   SEND_CLAIM_VOTE = 'SEND_CLAIM_VOTE',

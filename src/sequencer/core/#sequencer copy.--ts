@@ -1,4 +1,4 @@
-import { TransactionsQueue, TxnResult, WAITING, DONE, FAILED, REVISION, MAX_RETRIES, RETRY, UNRESOLVED } from "./transaction-queues.js";
+import { TransactionsQueue, TxnResult, WAITING, DONE, FAILED, REVISION, MAX_RETRIES } from "./transaction-queues.js";
 import { postTransaction } from "./transaction-queues.js";
 import { SequencerLogger as log } from "./logs.js";
 
@@ -42,7 +42,59 @@ class Sequencer {
       
       // This is an asynchronous call, and will callback on Done or Failure.
       try {
-        Sequencer.dispatch(queue, pendingTx);
+        Sequencer.dispatch(pendingTx, {
+
+          // the Transaction was submitted to Mina but it has not been included
+          // in a block yet. It is in REVISION state so we have to wait.
+          onRevision: async (result: TxnResult) => {
+            let revisionTx = await queue.closeTransaction(pendingTx.uid, {
+              state: REVISION,
+              result: result
+            })
+  
+            // and we set the queue as free to run other one
+            queue.setNoRunningTx();
+            return;
+          },
+
+          // the Action was succesfull so we update the transaction status
+          onDone: async (result: TxnResult) => {
+            let doneTx = await queue.closeTransaction(pendingTx.uid, {
+              state: DONE,
+              result: result
+            })
+  
+            // and we set the queue as free to run other one
+            queue.setNoRunningTx();
+            return;
+          },
+  
+          // the Action has failed BUT anyway must update transaction status
+          onFailure: async (result: TxnResult) => {
+            log.error(result.error);
+            result.error = result.error || {};
+
+            let failedTx = await queue.closeTransaction(pendingTx.uid, {
+              state: FAILED,
+              result: result
+            })
+  
+            // we check if we have some retries left, and increment its count
+            // so it can still be processed in the next cycle
+            failedTx = await queue.retryTransaction(failedTx.uid, MAX_RETRIES);
+  
+            // and we set the queue as free to run it again so it can retry
+            queue.setNoRunningTx();
+            return;
+          }
+        });
+
+        // if we could send the Transaction it must be reviewed by MINA to 
+        // include it in a block. We mark it as REVISION in the queue so it will
+        // not be run again
+        // pendingTx = await queue.updateTransaction(pendingTx.uid, { 
+        //   state: REVISION 
+        // });
       } 
       catch(err: any) {
         console.log("Sequencer dispatch failed ERR=", err);
@@ -55,11 +107,15 @@ class Sequencer {
 
   /**
    * Dispatch the transaction pending on this queue. It has to deal with the 
-   * different states: WAITING, REVISION, DONE, FAILED, RETRY
+   * different states: WAITING, REVISION, DONE, FAILED. 
    */
   static async dispatch(
-    queue: TransactionsQueue,
-    txData: any
+    txData: any, 
+    callbacks: {
+      onRevision: (result: TxnResult) => void,
+      onDone: (result: TxnResult) => void,
+      onFailure: (result: TxnResult) => void 
+    }
   ) {
     if (! Sequencer._dispatchers.has(txData.type))
       return; // No dispatcher for this type, cant do anything
@@ -72,132 +128,34 @@ class Sequencer {
       // if a new transaction, need to dispatch it 
       if (txData.state === WAITING) {
         let result = await dispatcher.dispatch(txData); 
-
-        // failed: there is some irrecoverable error and can do nothing 
-        if (result.error) {
-          await Sequencer.onTxnUnresolvedError(queue, txData, result);
-          return;
-        }
+        if (result.error)
+          throw result;
       
-        // success: was submitted and goes to revision for inclusion
+        // submitted but it stays on revision
         log.dispatchedTxn(result);
-        await Sequencer.onTxnRevision(queue, txData, result);
-        return;        
+        callbacks.onRevision(result);
       }
 
       // if not included yet, need to wait for it
       if (txData.state === REVISION) {
         let result = await dispatcher.waitForInclusion(txData.hash); 
+        if (result.error)
+          throw result;
 
-        // failed
-        let max = dispatcher.maxRetries();
-        if (result.error) {
-          // let's see if we can still retry
-          let canRetry = await Sequencer.onTxnRetry(queue, txData, max, result);
-          if (canRetry)
-            return;
+        // we now can call the onFinished callback
+        result = await dispatcher.onFinished(txData, result);
 
-          // fully failed, no more retries
-          await Sequencer.onTxnFailure(queue, txData, result);
-
-          // and call the onFailure callback with this result
-          result = await dispatcher.onFailure(txData, result);
-        }
-
-        // success ! and are done with it
-        await Sequencer.onTxnDone(queue, txData, result);
-
-        // we now can call the onSucess callback
-        result = await dispatcher.onSuccess(txData, result);
+        // success, we are done with it
+        callbacks.onDone(result);
       }
     }
     catch (result: any) {
-      await Sequencer.onTxnUnresolvedError(queue, txData, result);
-      return;
-    }
-  }
-
-
-  // Send failed and we cant do anything to solve this
-  // probably is a code error that raised an exception
-  static async onTxnUnresolvedError(
-    queue: TransactionsQueue, 
-    pendingTxn: any, 
-    result: TxnResult
-  ) {
-    let revisionTx = await queue.closeTransaction(pendingTxn.uid, {
-      state: UNRESOLVED,
-      result: result
-    })
-    queue.setNoRunningTx(); // free to run other one
-    return;
-  };
-
-  // the Transaction was submitted to Mina but it has not been included
-  // in a block yet. It is in REVISION state so we have to wait.
-  static async onTxnRevision(
-    queue: TransactionsQueue, 
-    pendingTxn: any, 
-    result: TxnResult
-  ) {
-    let revisionTx = await queue.closeTransaction(pendingTxn.uid, {
-      state: REVISION,
-      result: result
-    })
-    queue.setNoRunningTx(); // free to run other one
-    return;
-  };
-
-  // the Action was succesfull so we update the transaction status
-  static async onTxnDone(
-    queue: TransactionsQueue, 
-    pendingTxn: any, 
-    result: TxnResult
-  ) {
-    let doneTx = await queue.closeTransaction(pendingTxn.uid, {
-      state: DONE,
-      result: result
-    })
-    queue.setNoRunningTx(); // free to run other one
-    return;
-  };
-
-  // the Action has failed BUT anyway must update transaction status
-  static async onTxnFailure(
-    queue: TransactionsQueue, 
-    pendingTxn: any, 
-    result: TxnResult
-  ) {
-    log.error(result.error);
-    result.error = result.error || {};
-    let failedTx = await queue.closeTransaction(pendingTxn.uid, {
-      state: FAILED,
-      result: result
-    })
-    queue.setNoRunningTx(); // free to run other one
-    return;
-  }
-
-  // the Action has failed BUT we may retry it
-  static async onTxnRetry(
-    queue: TransactionsQueue, 
-    pendingTxn: any, 
-    maxRetries: number,
-    result: TxnResult
-  ): Promise<boolean> {
-    log.error(result.error);
-    // we check if we have some retries left, and increment its count
-    // so it can still be processed in the next cycle
-    let retries = await queue.getTransactionRetries(pendingTxn.uid);
-    if (retries < maxRetries) {
-      let retryTx = await queue.retryTransaction(pendingTxn.uid, {
-        MAX_RETRIES: maxRetries, 
-        state: WAITING
+      callbacks.onFailure({
+        hash: result.hash || "",
+        done: result.done || {},
+        error: result.error || result
       });
-      queue.setNoRunningTx(); // free to run other one
-      return true;
-    } 
-    return false;
+    }
   }
 
 
@@ -245,11 +203,21 @@ class Sequencer {
    */
   static addDispatcher(
     name: string, 
-    dispatcher: any
-  ) {
+    dispatcher: any) 
+  {
     Sequencer._dispatchers.set(name, dispatcher);
   }
- 
+
+  
+  /**
+   * Review queues. We need to take into account the case where some transaction
+   * was dispatched, the sequencer was offline and so we could not record the 
+   * transaction state, either as DONE or FAILED. 
+   * In this case we need to check with the Graphql endpoint the real status of 
+   * ths transaction:
+   * - If it was success, we change state to DONE.
+   * - If it failed, we change state to WAITING so it can be retried.
+   */
 
   /**
    * Post a transaction to the Queue. Is a helper function to be used 

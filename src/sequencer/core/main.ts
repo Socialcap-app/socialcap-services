@@ -3,22 +3,16 @@ import { merkleStorage } from "../../global.js";
 import { SequencerLogger as log } from "./logs.js";
 import { Sequencer } from "./sequencer.js";
 
-const INTERVAL = 10000; // every 10 secs
-
-export interface IDispatcherEntry {
-  name: string;
-  dispatcher: any
-}
+const INTERVAL = 5000; // every 5 secs
 
 
 export function setupSequencer(params: {
-  dispatchers: IDispatcherEntry[]
+  dispatchers: any[]
 }) {
-  
   console.log("\nRun on Mina.Berkeley");
   const 
-  BERKELEY_URL = 'https://proxy.berkeley.minaexplorer.com/graphql',
-  ARCHIVE_URL = 'https://archive.berkeley.minaexplorer.com/';
+    BERKELEY_URL = 'https://proxy.berkeley.minaexplorer.com/graphql',
+    ARCHIVE_URL = 'https://archive.berkeley.minaexplorer.com/';
   
   const Berkeley = Mina.Network({
     mina: BERKELEY_URL, 
@@ -29,8 +23,10 @@ export function setupSequencer(params: {
   
   console.log("\nSetting ip dispatchers");
   (params.dispatchers || []).forEach((t) => {
-    Sequencer.addDispatcher(t.name, t.dispatcher);
-    console.log(`Dispatcher: ${t.name} ${t.dispatcher}`)
+    const dispatcher = new t();
+    const name = dispatcher.name();
+    Sequencer.addDispatcher(name, dispatcher);
+    console.log(`Dispatcher: ${name}`)
   })
 }
 
@@ -48,15 +44,16 @@ export async function runSequencer() {
   }, INTERVAL) 
 }
 
-export function startSequencer() {
 
+export function startSequencer() {
   // start the Db storage
   console.log("\n");
   merkleStorage.startup();
   
   // we need the Db to be ready before we can do anything
   // so we make it wait for INTERVAL secs before running
-  setTimeout(async () => {
-    runSequencer()
+  let to = setTimeout(async () => {
+    runSequencer();
+    clearTimeout(to);
   }, INTERVAL);
 }

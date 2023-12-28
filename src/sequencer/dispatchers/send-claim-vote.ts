@@ -13,6 +13,16 @@ export { SendClaimVoteDispatcher };
 
 class SendClaimVoteDispatcher extends AnyDispatcher {
 
+  static uname = 'CREATE_CLAIM_VOTING_ACCOUNT';
+
+  name(): string { 
+    return SendClaimVoteDispatcher.uname; 
+  };
+
+  maxRetries(): number {
+    return 3;
+  }
+
   /**
    * Creates a new zkApp using the ClaimVotingContract. Each claim has 
    * its own zkApp account created just for doing the voting on it.
@@ -69,22 +79,19 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
     return result;
   }
 
-  async onFinished(
+  async onSuccess(
     txnData: RawTxnData, 
     result: TxnResult
   ): Promise<TxnResult> {
-    const { claimUid, accountId, privateKey } = txnData.data;
+    const { claimUid, accountId } = txnData.data;
+    return result;
+  }
 
-    // if we are really finished , we need to post a Transaction event 
-    // to report this so we can latter update the associated Claim
-    return await this.postEvent({
-      type: 'claim_zkapp_account_created',
-      subject: `claim.${claimUid}`,
-      payload: {
-        claimUid: claimUid,
-        accountId: accountId,
-        privateKey: privateKey
-      }        
-    }, result);
+  async onFailure(
+    txnData: RawTxnData, 
+    result: TxnResult
+  ): Promise<TxnResult> {
+    const { claimUid, accountId } = txnData.data;
+    return result;
   }
 }
