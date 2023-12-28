@@ -8,10 +8,10 @@ import { RawTxnData,
   TxnResult
 } from "../core/index.js"
 
-export { CreateClaimVotingAccountDispatcher };
+export { SendClaimVoteDispatcher };
 
 
-class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
+class SendClaimVoteDispatcher extends AnyDispatcher {
 
   /**
    * Creates a new zkApp using the ClaimVotingContract. Each claim has 

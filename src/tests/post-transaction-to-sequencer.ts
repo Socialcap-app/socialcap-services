@@ -1,11 +1,11 @@
 import { PrivateKey, PublicKey } from "o1js";
-import { postTransaction } from "../sequencer/core/index.js";
+import { Sequencer } from "../sequencer/core/index.js";
 
 
 // we need to generate a new key pair for each deploy
 
 setTimeout(async () => {
-  let txn = await postTransaction("CREATE_CLAIM_VOTING_ACCOUNT", {
+  let txn = await Sequencer.postTransaction("CREATE_CLAIM_VOTING_ACCOUNT", {
     type: 'CREATE_CLAIM_VOTING_ACCOUNT',
     data: {
       claimUid: "5a01104",
@@ -18,7 +18,7 @@ setTimeout(async () => {
 }, 1000)
 
 setTimeout(async () => {
-  let txn = await postTransaction("CREATE_CLAIM_VOTING_ACCOUNT", {
+  let txn = await Sequencer.postTransaction("CREATE_CLAIM_VOTING_ACCOUNT", {
     type: 'CREATE_CLAIM_VOTING_ACCOUNT',
     data: {
       claimUid: "5a0103",

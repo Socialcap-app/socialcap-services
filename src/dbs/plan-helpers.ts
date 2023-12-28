@@ -13,3 +13,11 @@ export async function findMasterPlanByName(communityUid: string, name: string) {
   
   return plans[0]; // just return the first one we found
 }
+
+export async function getMasterPlan(uid: string) {
+  let plan = await prisma.plan.findUnique({
+    where: { uid: uid }
+  });
+  
+  return plan ; 
+}

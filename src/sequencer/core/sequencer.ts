@@ -1,4 +1,5 @@
 import { TransactionsQueue, TxnResult, WAITING, DONE, FAILED, REVISION, MAX_RETRIES } from "./transaction-queues.js";
+import { postTransaction } from "./transaction-queues.js";
 import { SequencerLogger as log } from "./logs.js";
 
 export { Sequencer };
@@ -216,4 +217,19 @@ class Sequencer {
    * - If it was success, we change state to DONE.
    * - If it failed, we change state to WAITING so it can be retried.
    */
+
+  /**
+   * Post a transaction to the Queue. Is a helper function to be used 
+   * by internal and external code to post transactions without needing 
+   * to create a Queue.
+   */
+  static async postTransaction(queueId: string, params: {
+    type: string,
+    data: object
+  }): Promise<any> {
+    let tx = await TransactionsQueue
+      .queue(queueId)
+      .push(params);
+    log.postedTxn(tx);
+  }
 }
