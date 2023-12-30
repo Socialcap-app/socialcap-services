@@ -70,7 +70,7 @@ export async function createVotesBatch(params: {
  * @param state 
  * @returns array of batches
  */
-export async function getBatchesByPlan(planUid: string, state: number) {
+export async function getBatchesByPlan(planUid: string, state?: number) {
 
   let batches = await prisma.batch.findMany({
     where: { state: state } 

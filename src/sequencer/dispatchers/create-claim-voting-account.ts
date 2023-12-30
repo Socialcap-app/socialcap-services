@@ -3,14 +3,10 @@ import { ClaimVotingContract } from "@socialcap/claim-voting";
 import { UID } from "@socialcap/contracts-lib";
 import { Payers } from "./payers.js"
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
-import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult } from "../core/index.js"
+import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
 import { updateClaimAccountId } from "../../dbs/claim-helpers.js";
 export { CreateClaimVotingAccountDispatcher };
 
-
-class Pepe {
-  static xname = 'pepe';
-}
 
 class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
 
@@ -35,11 +31,15 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
    * @returns result of successfull transaction
    * @throws exception on failure, will be handled by Sequencer.dispatcher
    */
-  async dispatch(txnData: RawTxnData) {
+  async dispatch(txnData: RawTxnData, sender: Sender) {
     // this data was send by postTransaction
     const { claimUid, strategy } = txnData.data;
     
-    const deployer = Payers.DEPLOYER;
+    const deployer = {
+      address: sender.accountId,
+      publicKey: PublicKey.fromBase58(sender.accountId),
+      privateKey: PrivateKey.fromBase58(sender.secretKey)
+    };
 
     // we ALWAYS compile it
     await ClaimVotingContract.compile();

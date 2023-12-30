@@ -50,6 +50,10 @@ class TransactionsQueue {
     return new TransactionsQueue(name) ;
   }
 
+  name(): string {
+    return this._queue;
+  }
+
   hasRunningTx(): boolean {
     return this._txRunning !== "";
   }

@@ -44,7 +44,7 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
     // we ALWAYS compile it
     await ClaimVotingContract.compile();
 
-    // we need to generate a new key pair for each deploy
+/*     // we need to generate a new key pair for each deploy
     const zkappPrivkey = PrivateKey.random();
     const zkappPubkey = zkappPrivkey.toPublicKey();
 
@@ -76,8 +76,8 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
       accountId: zkappPubkey.toBase58(), 
       privateKey: zkappPrivkey.toBase58()
     }
-
     return result;
+ */
   }
 
   async onSuccess(

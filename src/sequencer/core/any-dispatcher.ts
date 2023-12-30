@@ -7,6 +7,8 @@ import { RawTxnData, TxnResult } from "./transaction-queues.js";
 import { waitForTransaction } from "./wait-for-transaction.js";
 import { TxnEvent, postTxnEvent } from "./transaction-events.js";
 import { SequencerLogger as log } from "./logs.js";
+import { Sender } from "./senders-pool.js";
+
 import { 
   TRY_SEND_TRANSACTION_EXCEPTION,
   TRY_WAITING_TRANSACTION_EXCEPTION,
@@ -15,6 +17,8 @@ import {
 } from "./error-codes.js";
 
 export { AnyDispatcher };
+
+let nonce = 0;
 
 
 abstract class AnyDispatcher {
@@ -33,7 +37,8 @@ abstract class AnyDispatcher {
    * by the Sequencer.dispatch method to send a new transaction to Mina.
    */
   abstract dispatch(
-    txData: RawTxnData
+    txData: RawTxnData,
+    sender: Sender
   ): Promise<any>;
 
   /**

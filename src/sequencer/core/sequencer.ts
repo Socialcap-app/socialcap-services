@@ -1,5 +1,6 @@
 import { TransactionsQueue, TxnResult, WAITING, REVISION } from "./transaction-queues.js";
 import { SequencerLogger as log } from "./logs.js";
+import { Sender, SendersPool } from "./senders-pool.js";
 
 export { Sequencer };
 
@@ -70,11 +71,22 @@ class Sequencer {
     try {
       // if a new transaction, need to dispatch it 
       if (txData.state === WAITING) {
-        let result = await dispatcher.dispatch(txData); 
+        // Check if we have an available sender signer for this queue
+        let sender = SendersPool.getAvailableSender();
+        if (! sender) {
+          // we have to wait for an available deployer
+          // can't do anothing more here, just keep WAITING
+          return;
+        }
+
+        // block the sender and dispatch 
+        SendersPool.blockSender(sender, queue.name())
+        let result = await dispatcher.dispatch(txData, sender); 
 
         // UNSOLVED: there is some irrecoverable error and can do nothing 
         if (result.error) {
           await Sequencer.txnUnresolvedError(queue, txData, result);
+          SendersPool.freeSender(queue.name());
           return;
         }
       
@@ -92,11 +104,14 @@ class Sequencer {
         let max = dispatcher.maxRetries();
         if (result.error) {
           let retryTxn = await Sequencer.txnRetry(queue, txData, max, result);
-          if (retryTxn)
+          if (retryTxn) {
+            SendersPool.freeSender(queue.name());
             return;
+          }
 
           // FULLY FAILED, no more retries
           await Sequencer.txnFailure(queue, txData, result);
+          SendersPool.freeSender(queue.name());
 
           // we now can try the onFailure callback with this result
           // we need to trap this because it is not a Sequencer error
@@ -111,6 +126,7 @@ class Sequencer {
 
         // SUCCESS: and are done with it
         await Sequencer.txnDone(queue, txData, result);
+        SendersPool.freeSender(queue.name());
 
         // we now can try the onSuccess callback
         // we need to trap this because it is not a Sequencer error
@@ -129,6 +145,7 @@ class Sequencer {
         done: result.done || {},
         error: result.error || result
       });
+      SendersPool.freeSender(queue.name());
       return;
     }
   }

@@ -1,13 +1,15 @@
 import { Mina } from "o1js";
 import { merkleStorage } from "../../global.js";
 import { SequencerLogger as log } from "./logs.js";
+import { Sender, SendersPool } from "./senders-pool.js";
 import { Sequencer } from "./sequencer.js";
 
 const INTERVAL = 5000; // every 5 secs
 
 
 export function setupSequencer(params: {
-  dispatchers: any[]
+  dispatchers: any[],
+  senders: Sender[]
 }) {
   log.info("Run Sequencer over Mina.Berkeley");
   const 
@@ -21,11 +23,17 @@ export function setupSequencer(params: {
   
   Mina.setActiveInstance(Berkeley);
   
-  log.info("Setting ip dispatchers");
+  log.info("Setting dispatchers");
   (params.dispatchers || []).forEach((dispatcher) => {
     const name = dispatcher.name();
     Sequencer.addDispatcher(name, dispatcher);
     log.info(`Added dispatcher ${name}`)
+  })
+
+  log.info("Setting sender accounts");
+  (params.senders || []).forEach((sender) => {
+    SendersPool.addSender(sender.accountId, sender.secretKey)
+    log.info(`Added sender ${sender.accountId}`)
   })
 }
 
