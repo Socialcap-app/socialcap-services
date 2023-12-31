@@ -16,6 +16,22 @@ export async function getRunningClaims(params?: any) {
   return claims || [];
 }
 
+export async function getClaimsByPlan(planUid: string, params: {
+  states: number[]
+}) {
+  const claims = await prisma.claim.findMany({
+    where: { planUid: planUid },
+    orderBy: { createdUTC: 'asc' }
+  })
+  if (! params.states) 
+    return claims || [];
+
+  let filtered = (claims || []).filter((claim) => {
+    return ((params.states || []).includes(claim.state))
+  })
+  return filtered || [];
+}
+
 export async function updateClaimVotes(params: {
   uid: string,
   positive: number,
@@ -35,12 +51,12 @@ export async function updateClaimVotes(params: {
   return claim;
 }
 
-export async function updateClaimAccountId(params: {
-  uid: string,
+
+export async function updateClaimAccountId(uid: string, params: {
   accountId: string
 }) {
   const claim = await prisma.claim.update({
-    where: { uid: params.uid },
+    where: { uid: uid },
     data: { 
       accountId: params.accountId,
       updatedUTC: (new Date()).toISOString()

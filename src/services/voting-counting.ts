@@ -3,20 +3,130 @@
  */
 import { Field, PublicKey, PrivateKey, Mina, MerkleMap } from "o1js";
 import { UID, VotingInstance, ClaimsVotingFactory, NullifierProxy } from "@socialcap/contracts";
-import { VOTING, CLAIMED } from "@socialcap/contracts";
+import { VOTING, CLAIMED } from "@socialcap/contracts-lib";
 import { logger } from "../global.js";
 import { getValidators, getAuditors } from "../dbs/members-helpers.js";
 import { getEntity, updateEntity } from "../dbs/any-entity-helpers.js"
+import { getMasterPlan } from "../dbs/plan-helpers.js";
+import { getClaimsByPlan, updateClaimAccountId } from "../dbs/claim-helpers.js";
+import { getBatchesByPlan } from "../dbs/batch-helpers.js";
 import { addElectorsToNullifier, getNullifierOrRaise } from "../dbs/nullifier-helpers.js";
 import { MinaService, setMinaNetwork } from "./mina-service.js";
 import { VotingStrategy } from "./voting-strategy.js";
 import { assignTaskToElectors } from "./voting-assignments.js";
 
+import { Sequencer } from "../sequencer/core/sequencer.js";
+
 export { runVotesCountingProcess }
 
 
+/**
+ * We count the number of claims with no Account created.
+ * @param claims 
+ */
+function checkClaimVotingAccounts(claims: any[]): boolean {
+
+}
+
+
+
+async function createClaimVotingAccounts(plan: any, claims: any[]) {
+  // we now traverse claims to create the account if not created
+  for (let j=0; j < claims.length; j++) {
+    let claim = claims[j];
+
+    if (! claim.accountId) {
+      // we must dispatch a transaction for creating the account
+      await Sequencer.postTransaction('voting_accounts_creation', {
+        type: 'CREATE_CLAIM_VOTING_ACCOUNT',
+        data: {
+          claimUid: claim.uid,
+          strategy: plan.strategy,
+        }
+      });
+
+      // and change the AccountId to '?' so we do not process it again
+      claim = await updateClaimAccountId(claim.uid, {
+        accountId: '?' // unknown for now, until the Sequencer changes it
+      }) 
+    }
+  }
+}
+
+
+async function processVotesBatch()
+
+async function __runVotesCountingProcess()
+/* 
+// get the Masterplan data
+let plan = await getPlan(planUid);
+
+// get all claims in CLAIMED state for this Masterplan
+let claims = await getClaimsByPlan(planUid, [CLAIMED]); 
+
+// get all VotingBatches for this Masterplan
+let batches = await getBatchesByPlan(planUid, WAITING);
+
+// we repeat until all votes have been dispatched
+const 
+  ALL_DISPATCHED = 1, 
+  HAS_PENDING_VOTES = 2, 
+  UNABLE_TO_DISPATCH = 3;
+
+let status = HAS_PENDING_VOTES;
+
+while (status === HAS_PENDING_VOTES && status !== UNABLE_TO_DISPATCH) {
+  status = await dispatchBatchVotes(batch);
+}
+
+async function dispatchBatchVotes(batch): Promise<number> {
+  // check signature and decrypt data
+  
+  // we traverse all votes in the batch
+  
+  if the claim has no account (either empty or ?)
+  // send to Sequencer so we can create it
+  
+  if the claim has an account
+  // send the vote to the Sequencer so we can count it
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function runVotesCountingProcess(
-  claim: any
+  claim: any,
 ) {
   try {
     if (claim.state !== CLAIMED)

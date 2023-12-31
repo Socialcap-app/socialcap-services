@@ -109,10 +109,11 @@ async function run(communityName: string, planName: string) {
     // the queue name will be the publicKey of the account, so that all 
     // the transactions we send tothis account can end in the same queue
     // and be processed in the order they were received
-    let qName = `${claim.accountId}` || "";  
+    let qName = `${claim.uid}` || "";  
 
     // we have to create the Account in MINA
     if (! claim.accountId) {
+      /*
       Sequencer.postTransaction(qName, {
         type: 'CREATE_CLAIM_VOTING_ACCOUNT',
         data: {
@@ -120,18 +121,28 @@ async function run(communityName: string, planName: string) {
           strategy: plan?.strategy,
         }
       })
+      */
     }
 
     // we now send the votes
     if (claim.accountId) {
+      /*
       Sequencer.postTransaction(qName, {
         type: 'SEND_CLAIM_VOTE',
         data: {
           claimUid: claim.uid,
           electorPuk: votes.elector,
           result: vote.result
+          /*
+          electorPuk: PublicKey, 
+          vote: Field, // +1 positive, +2 negative or 0 ignored
+          batchRoot: Field,
+          batchWitness: VotesInBatchWitness, 
+          nullifierRoot: Field,
+          nullifierWitness: MerkleMapWitness
         }
       })
+      */
     }
   })
 

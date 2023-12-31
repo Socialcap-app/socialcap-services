@@ -71,6 +71,7 @@ class Sequencer {
     try {
       // if a new transaction, need to dispatch it 
       if (txData.state === WAITING) {
+        
         // Check if we have an available sender signer for this queue
         let sender = SendersPool.getAvailableSender();
         if (! sender) {

@@ -1,7 +1,7 @@
 import { prisma, logger } from "../global.js";
 import { WAITING, DONE, IGNORED, REJECTED, UID } from "@socialcap/contracts";
 
-interface SignedData {
+export interface SignedData {
   publicKey: string;
   data: string; 
   signature: {
@@ -10,7 +10,7 @@ interface SignedData {
   };
 }
 
-interface SignedVote {
+export interface SignedVote {
   uid: string, // the taskUid
   claimUid: string,
   assigneeUid: string,
@@ -19,7 +19,7 @@ interface SignedVote {
   result: string, // "+1: Positive" "-1: Negative" "0: Abstain" 
 }
 
-interface VotesBatchMetadata {
+export interface VotesBatchMetadata {
   communityUid: string,// the community where the voting process is happening
   planUid: string, // the Master Plan Uid of the credential being voted
   assigneeUid: string, // the elector Uid who submitted this batch
@@ -70,10 +70,11 @@ export async function createVotesBatch(params: {
  * @param state 
  * @returns array of batches
  */
-export async function getBatchesByPlan(planUid: string, state?: number) {
-
+export async function getBatchesByPlan(planUid: string, params: { 
+  states: number[]
+}) {
   let batches = await prisma.batch.findMany({
-    where: { state: state } 
+    where: { state: { in: params.states }} 
   });
   if (! batches || !batches.length)
     return [];
