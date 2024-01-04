@@ -80,9 +80,7 @@ abstract class AnyDispatcher {
       let pendingTxn = signKeys.length 
         ? await txn.sign(signKeys).send()
         : await txn.send();
-
-      log.pendingTxn(pendingTxn) ;
-      
+        
       if (! pendingTxn.isSuccess) {
         return {
           hash: "",
@@ -90,7 +88,9 @@ abstract class AnyDispatcher {
           error: hasException(TRY_SEND_TRANSACTION_EXCEPTION, pendingTxn)
         };
       }
-
+      
+      log.pendingTxn(pendingTxn) ;
+      
       // we return ths submitted transaction in TxnResult format 
       return {
         hash: pendingTxn.hash() as string,

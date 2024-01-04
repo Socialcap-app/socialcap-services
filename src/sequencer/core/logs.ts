@@ -35,7 +35,7 @@ export class SequencerLogger {
   }
 
   static pendingTxn(txn: any) {
-    console.log(`${dts()}: pendingTxn=`, JSON.stringify(txn));
+    console.log(`${dts()}: pendingTxn=`, JSON.stringify(txn.hash()));
   }
 
   static dispatchedTxn(result: any) {

@@ -82,13 +82,13 @@ class Sequencer {
 
         // block the sender so it is not used by another queue
         SendersPool.blockSender(sender, queue.name());
-        log.info(`Sender pool=${sender.accountId} queue=${sender.queue}`)
+        log.info(`Sequencer.dispatch Sender id=${sender.accountId} worker=${sender.workerUrl}`)
 
         // now we can dispatch, BUT we must fork this to run in different
         // thread so we can send more than one Txn in the same block 
         // currently we can not do it with o1js if running in same thread
         let result = await dispatcher.sendToWorker(txData, sender); 
-        console.log("dispatcher.sendToWorker result=", result)
+        log.info(`Sequencer.dispatch dispatcher.sendToWorker result=${JSON.stringify(result)}`)
 
         // UNSOLVED: there is some irrecoverable error and can do nothing 
         if (result.error) {
