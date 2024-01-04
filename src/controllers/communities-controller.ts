@@ -135,12 +135,13 @@ export async function getAllCommunities(params: any) {
 export async function prepareCommunityClaimsDownload(
   uid: string, 
   fileName: string,
+  planUid?: string,
   states?: string
 ) {
   try {
     let members = await (new CommunityMembers()).build(uid);
  
-    let claims = await getCommunityClaims(uid, members, [DRAFT,CLAIMED]) || [];
+    let claims = await getCommunityClaims(uid, members, planUid, [DRAFT,CLAIMED]) || [];
 
     let content = "";
 

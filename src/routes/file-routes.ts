@@ -11,13 +11,15 @@ async function fileRoutes() {
   fastify.get('/api/download/community_claims', async (request, reply) => {
     const query = (request.query as any);
     const uid = query.uid;
+    const planUid = query.planUid;
 
-    let fileTmp = '/tmp'
-    let fileName = `claims-${uid}-`+(new Date()).toISOString()+'.csv';
+    let fileTmp = '/tmp';
+    let fileName = planUid ? `claims-${uid}-plan-${planUid}`+(new Date()).toISOString()+'.csv' : `claims-${uid}-`+(new Date()).toISOString()+'.csv';
 
     let isReady = await prepareCommunityClaimsDownload(
       uid, 
-      `${fileTmp}/${fileName}`
+      `${fileTmp}/${fileName}`,
+      planUid
     );
     if (! isReady) {
       reply

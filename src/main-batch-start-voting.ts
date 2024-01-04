@@ -32,7 +32,7 @@ async function run(communityName: string) {
 
   let members = await (new CommunityMembers()).build(comn.uid);
 
-  let claims = await getCommunityClaims(comn.uid, members, [CLAIMED]);
+  let claims = await getCommunityClaims(comn.uid, members, undefined, [CLAIMED]);
 
   // now we can start the voting process for each claim
   for (let j=0; j < claims.length ; j++) {

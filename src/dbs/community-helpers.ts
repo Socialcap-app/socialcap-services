@@ -6,6 +6,7 @@ import { DRAFT, CLAIMED, IGNORED, VOTING, UNPAID, REJECTED, APPROVED } from "@so
 export async function getCommunityClaims(
   uid: string, 
   members: CommunityMembers,
+  planUid?: string,
   states?: number[]
 ) {
   states = states || [DRAFT,CLAIMED,IGNORED,VOTING,UNPAID,REJECTED,APPROVED];
@@ -14,6 +15,7 @@ export async function getCommunityClaims(
   let claims = await prisma.claim.findMany({
     where: { AND: [
       { communityUid: uid },
+      { planUid: planUid},
       { state: { in: states }}
     ]},
     orderBy: { applicantUid: 'asc' }
