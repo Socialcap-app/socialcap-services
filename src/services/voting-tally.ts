@@ -113,7 +113,7 @@ async function dispatchBatchVotes(
 
 async function createClaimVotingAccount(claim: any, plan: any) {
     // we must dispatch a transaction for creating the account
-    await Sequencer.postTransaction(, {
+    await Sequencer.postTransaction(qname(claim.uid), {
       type: 'CREATE_CLAIM_VOTING_ACCOUNT',
       data: {
         claimUid: claim.uid,

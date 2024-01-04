@@ -2,6 +2,7 @@
  * The Dispatchers abstract class which all dispatchers will derive from.
  * It implements the basic helper methods to be used by this derived classes.
  */
+import axios, { AxiosResponse } from 'axios';
 import { PrivateKey, PublicKey, Mina } from "o1js";
 import { RawTxnData, TxnResult } from "./transaction-queues.js";
 import { waitForTransaction } from "./wait-for-transaction.js";
@@ -80,13 +81,16 @@ abstract class AnyDispatcher {
         ? await txn.sign(signKeys).send()
         : await txn.send();
 
-      if (! pendingTxn.isSuccess) 
+      log.pendingTxn(pendingTxn) ;
+      
+      if (! pendingTxn.isSuccess) {
         return {
           hash: "",
           done: {},
-          error: hasException(TRY_SEND_TRANSACTION_EXCEPTION)
+          error: hasException(TRY_SEND_TRANSACTION_EXCEPTION, pendingTxn)
         };
-      
+      }
+
       // we return ths submitted transaction in TxnResult format 
       return {
         hash: pendingTxn.hash() as string,
@@ -94,6 +98,7 @@ abstract class AnyDispatcher {
       };
     }
     catch (err: any) {
+      console.log("proveAndSend", err);
       return {
         hash: "",
         done: {},
@@ -140,5 +145,35 @@ abstract class AnyDispatcher {
     }
 
     return result;
+  }
+
+
+  /**
+   * We run the dispatch() in a new worker thread, so we can handle
+   * more than one Txn in the same block ...
+   */
+  async sendToWorker(
+    txData: RawTxnData,
+    sender: Sender
+  ): Promise<any> {
+    try {
+      const url = `${sender.workerUrl}/dispatch/${this.name()}`;
+      const headers = {headers: {}};
+      const payload = {
+        txData: txData,
+        sender: sender
+      };
+      const response: AxiosResponse = await axios.post(url, 
+        payload, 
+        {...headers}
+      );
+      return response.data;
+    } catch (err: any) {
+      return {
+        hash: "",
+        data: {},
+        error: err
+      };
+    }
   }
 }

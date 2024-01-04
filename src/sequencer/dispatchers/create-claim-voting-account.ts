@@ -1,3 +1,4 @@
+import { Worker, isMainThread, parentPort, workerData } from "worker_threads";
 import { Mina, AccountUpdate, PrivateKey, PublicKey, Field } from "o1js";
 import { ClaimVotingContract } from "@socialcap/claim-voting";
 import { UID } from "@socialcap/contracts-lib";
@@ -15,7 +16,7 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
   name(): string { 
     return CreateClaimVotingAccountDispatcher.uname 
   };
-
+ 
   maxRetries(): number {
     return 3;
   }
@@ -34,6 +35,8 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
   async dispatch(txnData: RawTxnData, sender: Sender) {
     // this data was send by postTransaction
     const { claimUid, strategy } = txnData.data;
+    
+    console.log("Sender ", sender.accountId);
     
     const deployer = {
       address: sender.accountId,
@@ -70,13 +73,14 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
       [deployer.privateKey, zkappPrivkey]  // sign keys
     );
 
+    if (result.error) return result;
+
     result.data = {
       claimUid: claimUid,
       strategy: strategy,
       accountId: zkappPubkey.toBase58(), 
       // privateKey: zkappPrivkey.toBase58()
     }
-
     return result;
   }
 
@@ -87,7 +91,7 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
   ): Promise<TxnResult> {
     // if we are really finished , we need to update the associated accountId
     const { claimUid, accountId } = txnData.data;
-    await updateClaimAccountId({ uid: claimUid, accountId: accountId });
+    await updateClaimAccountId(claimUid, { accountId: accountId });
     return result;
   }
   
@@ -97,7 +101,7 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
   ): Promise<TxnResult> {
     // if failed, we set the accountId to empty string to mark it as unusable
     const { claimUid, accountId } = txnData.data;
-    await updateClaimAccountId({ uid: claimUid, accountId: ""});
+    await updateClaimAccountId(claimUid, { accountId: "" });
     return result;
   }
 }

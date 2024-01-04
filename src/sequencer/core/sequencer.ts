@@ -75,14 +75,20 @@ class Sequencer {
         // Check if we have an available sender signer for this queue
         let sender = SendersPool.getAvailableSender();
         if (! sender) {
-          // we have to wait for an available deployer
+          // we have to wait for an available sender
           // can't do anothing more here, just keep WAITING
           return;
         }
 
-        // block the sender and dispatch 
-        SendersPool.blockSender(sender, queue.name())
-        let result = await dispatcher.dispatch(txData, sender); 
+        // block the sender so it is not used by another queue
+        SendersPool.blockSender(sender, queue.name());
+        log.info(`Sender pool=${sender.accountId} queue=${sender.queue}`)
+
+        // now we can dispatch, BUT we must fork this to run in different
+        // thread so we can send more than one Txn in the same block 
+        // currently we can not do it with o1js if running in same thread
+        let result = await dispatcher.sendToWorker(txData, sender); 
+        console.log("dispatcher.sendToWorker result=", result)
 
         // UNSOLVED: there is some irrecoverable error and can do nothing 
         if (result.error) {
@@ -102,9 +108,12 @@ class Sequencer {
         let result = await dispatcher.waitForInclusion(txData.hash); 
 
         // FAILED: but let's see if we can still retry
-        let max = dispatcher.maxRetries();
         if (result.error) {
-          let retryTxn = await Sequencer.txnRetry(queue, txData, max, result);
+          let retryTxn = await Sequencer.txnRetry(queue, 
+            txData,  
+            dispatcher.maxRetries(), 
+            result
+          );
           if (retryTxn) {
             SendersPool.freeSender(queue.name());
             return;
@@ -126,7 +135,7 @@ class Sequencer {
         }
 
         // SUCCESS: and are done with it
-        await Sequencer.txnDone(queue, txData, result);
+        eawait Sequencer.txnDone(queue, txData, result);
         SendersPool.freeSender(queue.name());
 
         // we now can try the onSuccess callback
@@ -161,6 +170,7 @@ class Sequencer {
     let unresolvedTx = await queue.closeUnresolvedTransaction(pendingTxn.uid, {
       result: result
     })
+    log.error(result.error);
     queue.setNoRunningTx(); // free to run other one
     return unresolvedTx;
   };

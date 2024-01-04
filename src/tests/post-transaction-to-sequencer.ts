@@ -5,8 +5,8 @@ import { Sequencer } from "../sequencer/core/index.js";
 // we need to generate a new key pair for each deploy
 
 setTimeout(async () => {
-  let uid = "6a01205";
-  let txn = await Sequencer.postTransaction(`claim-${uid}`, {
+  let uid = "6a012037";
+  let txn = await Sequencer.postTransaction(`claims-${uid}`, {
     type: 'CREATE_CLAIM_VOTING_ACCOUNT',
     data: {
       claimUid: uid,
@@ -18,9 +18,10 @@ setTimeout(async () => {
   })
 }, 1000)
 
+
 setTimeout(async () => {
-  let uid = "6a01205";
-  let txn = await Sequencer.postTransaction(`claim-${uid}`, {
+  let uid = "6a012038";
+  let txn = await Sequencer.postTransaction(`claims-${uid}`, {
     type: 'CREATE_CLAIM_VOTING_ACCOUNT',
     data: {
       claimUid: uid,

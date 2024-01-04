@@ -9,7 +9,7 @@ const INTERVAL = 5000; // every 5 secs
 
 export function setupSequencer(params: {
   dispatchers: any[],
-  senders: Sender[]
+  workers: Sender[]
 }) {
   log.info("Run Sequencer over Mina.Berkeley");
   const 
@@ -27,13 +27,14 @@ export function setupSequencer(params: {
   (params.dispatchers || []).forEach((dispatcher) => {
     const name = dispatcher.name();
     Sequencer.addDispatcher(name, dispatcher);
+    //Sequencer.addDispatcher(name, dispatcher, workerPath);
     log.info(`Added dispatcher ${name}`)
   })
 
-  log.info("Setting sender accounts");
-  (params.senders || []).forEach((sender) => {
-    SendersPool.addSender(sender.accountId, sender.secretKey)
-    log.info(`Added sender ${sender.accountId}`)
+  log.info("Setting worker sender accounts");
+  (params.workers || []).forEach((sender) => {
+    SendersPool.addSender(sender.accountId, sender.secretKey, sender.workerUrl);
+    log.info(`Added sender ${sender.accountId} ${sender.workerUrl}`)
   })
 }
 

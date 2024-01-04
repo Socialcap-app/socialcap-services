@@ -24,7 +24,8 @@ export { Sender, SendersPool }
 interface Sender {
   accountId: string,
   secretKey: string,
-  queue: string // must be FREE if not assigned 
+  workerUrl: string, // the worker/dispatcher url
+  queue?: string // must be FREE if not assigned 
 }
 
 const FREE = "-"; // marks a FREE sender
@@ -35,16 +36,15 @@ class SendersPool {
   static _pool: Sender[] = [];
 
   static getAvailableSender(): Sender | null {
-    SendersPool._pool.forEach((sender) => {
-      if (sender.queue === FREE)
-        return sender; 
+    let freeSenders = SendersPool._pool.filter((sender) => {
+      return (sender.queue === FREE)
     })
-    return null;
+    return freeSenders.length > 0 ? freeSenders[0] : null;
   }
 
-  static blockSender(blocked: Sender, queue: string) {
+  static blockSender(unblocked: Sender, queue: string) {
     SendersPool._pool.map((sender, index) => {
-      if (sender.accountId === blocked.accountId)
+      if (sender.accountId === unblocked.accountId)
         SendersPool._pool[index].queue = queue; 
     })
   }
@@ -58,10 +58,15 @@ class SendersPool {
 
   /** Add it to the pool. The pool is created when the Sequencer is started
    * and so the pool will not change along the lifetime of a given Sequencer */
-  static addSender(accountId: string, secretKey: string) {
+  static addSender(
+    accountId: string, 
+    secretKey: string, 
+    workerUrl: string
+  ) {
     SendersPool._pool.push({
       accountId: accountId,
       secretKey: secretKey,
+      workerUrl: workerUrl,
       queue: FREE
     })
   }

@@ -1,6 +1,6 @@
 // import Fastify from 'fastify';
 import { logger, merkleStorage } from "./global.js";
-import { WAITING } from "@socialcap/contracts";
+import { WAITING } from "@socialcap/contracts-lib";
 import { OffchainMerkleStorage } from "./dbs/offchain-merkle-storage.js";
 import { findCommunityByName } from "./dbs/community-helpers.js";
 import { findMasterPlanByName } from "./dbs/plan-helpers.js";
@@ -35,7 +35,7 @@ async function run(communityName: string, planName: string) {
     return;
   }
 
-  let batches = await getBatchesByPlan(plan.uid, WAITING);
+  let batches = await getBatchesByPlan(plan.uid, { states: [WAITING] });
 
   interface ClaimVotes {
     uid: string,
