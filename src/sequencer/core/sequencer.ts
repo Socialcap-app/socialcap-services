@@ -135,7 +135,7 @@ class Sequencer {
         }
 
         // SUCCESS: and are done with it
-        eawait Sequencer.txnDone(queue, txData, result);
+        await Sequencer.txnDone(queue, txData, result);
         SendersPool.freeSender(queue.name());
 
         // we now can try the onSuccess callback
