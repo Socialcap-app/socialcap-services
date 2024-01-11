@@ -49,6 +49,15 @@ class SendersPool {
     })
   }
 
+  static getBlockedSender(queue: string): Sender | null {
+    for (let j=0; j < SendersPool._pool.length; j++) {
+      let sender = SendersPool._pool[j];
+      if (sender.queue === queue)
+        return sender;
+    }
+    return null;
+  }
+
   static freeSender(queue: string) {
     SendersPool._pool.map((sender, index) => {
       if (sender.queue === queue)

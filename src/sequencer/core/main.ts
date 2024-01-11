@@ -26,8 +26,7 @@ export function setupSequencer(params: {
   log.info("Setting dispatchers");
   (params.dispatchers || []).forEach((dispatcher) => {
     const name = dispatcher.name();
-    Sequencer.addDispatcher(name, dispatcher);
-    //Sequencer.addDispatcher(name, dispatcher, workerPath);
+    Sequencer.addDispatcher(name);
     log.info(`Added dispatcher ${name}`)
   })
 

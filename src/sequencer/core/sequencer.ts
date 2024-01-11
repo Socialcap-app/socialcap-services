@@ -1,6 +1,8 @@
-import { TransactionsQueue, TxnResult, WAITING, REVISION } from "./transaction-queues.js";
+import { TransactionsQueue, TxnResult, WAITING, REVISION, MAX_RETRIES } from "./transaction-queues.js";
 import { SequencerLogger as log } from "./logs.js";
+import { DispatcherProxy } from "./dispatcher-proxy.js";
 import { Sender, SendersPool } from "./senders-pool.js";
+import { sender } from "o1js/dist/node/lib/mina.js";
 
 export { Sequencer };
 
@@ -11,7 +13,7 @@ class Sequencer {
 
   // The set of Dispatchers used to submit transactions or actions
   // for a given type. There is one (and only one) Dispatcher per type.
-   static _dispatchers = new Map<string, any>;
+   static _dispatchers = new Map<string, DispatcherProxy>;
   
   /**
    * 
@@ -65,7 +67,7 @@ class Sequencer {
       return; // No dispatcher for this type, cant do anything
 
     // get the Dispatcher which will dispatch this Txn type
-    let dispatcher = Sequencer._dispatchers.get(txData.type);
+    let dispatcher = Sequencer._dispatchers.get(txData.type) as DispatcherProxy;
     log.dispatching(txData);
 
     try {
@@ -87,7 +89,7 @@ class Sequencer {
         // now we can dispatch, BUT we must fork this to run in different
         // thread so we can send more than one Txn in the same block 
         // currently we can not do it with o1js if running in same thread
-        let result = await dispatcher.sendToWorker(txData, sender); 
+        let result = await dispatcher.dispatch(txData, sender); 
         log.info(`Sequencer.dispatch dispatcher.sendToWorker result=${JSON.stringify(result)}`)
 
         // UNSOLVED: there is some irrecoverable error and can do nothing 
@@ -109,9 +111,10 @@ class Sequencer {
 
         // FAILED: but let's see if we can still retry
         if (result.error) {
+          let max = MAX_RETRIES; // await dispatcher.maxRetries(sender);
           let retryTxn = await Sequencer.txnRetry(queue, 
             txData,  
-            dispatcher.maxRetries(), 
+            max, 
             result
           );
           if (retryTxn) {
@@ -121,32 +124,36 @@ class Sequencer {
 
           // FULLY FAILED, no more retries
           await Sequencer.txnFailure(queue, txData, result);
-          SendersPool.freeSender(queue.name());
-
+          let sender = SendersPool.getBlockedSender(queue.name());
+          
           // we now can try the onFailure callback with this result
           // we need to trap this because it is not a Sequencer error
           // but an specific dispatcher error
           try {
-            result = await dispatcher.onFailure(txData, result);
+            result = await dispatcher.onFailure(txData, result, sender!);
           }
           catch (err) {
             log.error(`Dispatcher.onFailure failed err=${err}`)
           }
+
+          SendersPool.freeSender(queue.name());
         }
 
         // SUCCESS: and are done with it
         await Sequencer.txnDone(queue, txData, result);
-        SendersPool.freeSender(queue.name());
-
+        let sender = SendersPool.getBlockedSender(queue.name());
+        
         // we now can try the onSuccess callback
         // we need to trap this because it is not a Sequencer error
         // but an specific dispatcher error
         try {
-          result = await dispatcher.onSuccess(txData, result);
+          result = await dispatcher.onSuccess(txData, result, sender!);
         }
         catch (err) {
           log.error(`Dispatcher.onSuccess failed err=${err}`)
         }
+
+        SendersPool.freeSender(queue.name());
       }
     }
     catch (result: any) {
@@ -275,15 +282,15 @@ class Sequencer {
   /**
    * Adds a new dispatcher for a given transaction type. There is one, and 
    * only one dispatcher per type. Specific dispatchers are derived from the
-   * AnyDispatcher class.
+   * AnyDispatcher class and called by the DispatcherProxy
    * @param name A
    * @param dispatcher 
    */
   static addDispatcher(
-    name: string, 
-    dispatcher: any
+    name: string
   ) {
-    Sequencer._dispatchers.set(name, dispatcher);
+    let proxy = new DispatcherProxy(name);
+    Sequencer._dispatchers.set(name, proxy);
   }
  
 

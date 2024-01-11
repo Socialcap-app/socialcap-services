@@ -35,6 +35,19 @@ fastify.post('/dispatch/:name', async (request, reply) => {
   }
 })
 
+fastify.get('/max-retries/:name', async (request, reply) => {
+  const { name } = request.params as any;
+  
+  let dispatcher = AllDispatchers.get(name);
+  try {
+    const response = await dispatcher.maxRetries();
+    reply.send(response);
+  }
+  catch (err) {
+    reply.code(500).send(err)
+  }
+})
+
 fastify.post('/on-success/:name', async (request, reply) => {
   const { name } = request.params as any;
   let { txData, result } = request.body as any;
