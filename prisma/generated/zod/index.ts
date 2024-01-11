@@ -16,6 +16,8 @@ export const MerkleMapScalarFieldEnumSchema = z.enum(['id','name','root','size',
 
 export const MerkleMapLeafScalarFieldEnumSchema = z.enum(['uid','mapId','index','key','hash','data','createdUtc','updatedUtc']);
 
+export const KVStoreScalarFieldEnumSchema = z.enum(['key','value']);
+
 export const SessionScalarFieldEnumSchema = z.enum(['uid','otp','email','createdUtc','updatedUtc']);
 
 export const PersonScalarFieldEnumSchema = z.enum(['uid','accountId','state','fullName','description','image','email','phone','telegram','preferences','createdUTC','updatedUTC','approvedUTC']);
@@ -99,6 +101,25 @@ export type MerkleMapLeaf = z.infer<typeof MerkleMapLeafSchema>
 export const MerkleMapLeafPartialSchema = MerkleMapLeafSchema.partial()
 
 export type MerkleMapLeafPartial = z.infer<typeof MerkleMapLeafPartialSchema>
+
+/////////////////////////////////////////
+// KV STORE SCHEMA
+/////////////////////////////////////////
+
+export const KVStoreSchema = z.object({
+  key: z.string().max(132),
+  value: z.string(),
+})
+
+export type KVStore = z.infer<typeof KVStoreSchema>
+
+/////////////////////////////////////////
+// KV STORE PARTIAL SCHEMA
+/////////////////////////////////////////
+
+export const KVStorePartialSchema = KVStoreSchema.partial()
+
+export type KVStorePartial = z.infer<typeof KVStorePartialSchema>
 
 /////////////////////////////////////////
 // SESSION SCHEMA

@@ -63,6 +63,16 @@ model MerkleMapLeaf {
 }
 
 //
+// VERY Simple KeyValue store
+// we only store string keys and JSON.stringified string values
+// all serialization and deserialization must be done by the appl
+//
+model KVStore {
+  key        String   @unique /// @zod.string.max(132)
+  value      String   
+}
+
+//
 // Entities
 // 
 model Session {
