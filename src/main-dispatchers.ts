@@ -25,20 +25,46 @@ fastify.post('/dispatch/:name', async (request, reply) => {
   const { name } = request.params as any;
   let { txData, sender } = request.body as any;
 
-  // get the dispatcher 
   let dispatcher = AllDispatchers.get(name);
-  
   try {
     const response = await dispatcher.dispatch(txData, sender);
     reply.send(response);
   }
   catch (err) {
-    // $TODO: ROLLBACK TRANSACTION
+    reply.code(500).send(err)
+  }
+})
+
+fastify.post('/on-success/:name', async (request, reply) => {
+  const { name } = request.params as any;
+  let { txData, result } = request.body as any;
+
+  let dispatcher = AllDispatchers.get(name);
+  try {
+    const response = await dispatcher.onSuccess(txData, result);
+    reply.send(response);
+  }
+  catch (err) {
+    reply.code(500).send(err)
+  }
+})
+
+fastify.post('/on-failure/:name', async (request, reply) => {
+  const { name } = request.params as any;
+  let { txData, result } = request.body as any;
+
+  let dispatcher = AllDispatchers.get(name);
+  try {
+    const response = await dispatcher.onFailure(txData, result);
+    reply.send(response);
+  }
+  catch (err) {
     reply.code(500).send(err)
   }
 })
 
 
+// we dont allow CORS for now ...
 // register CORS
 // fastify.register(cors, {
 //   origin: "*",

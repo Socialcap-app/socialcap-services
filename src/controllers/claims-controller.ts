@@ -4,7 +4,7 @@ import { fastify, prisma, logger } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { waitForTransaction } from "../services/mina-transactions.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
-import { startClaimVotingProcess } from "../services/voting-process.js";
+//import { startClaimVotingProcess } from "../services/voting-process-votes.js";
 
 type Claimable = {
   uid: string, // the UID of the MasterPlan ...
@@ -211,9 +211,16 @@ export async function submitClaim(params: {
   // check if we need to add it to the ClaimsQueue for latter processing
   if (addToQueue) {
     // we dont need to wait for payment, so we mark it as CLAIMED right now
-    // the voting process will be started by the ClaimsQueue processor
+    // the voting process will be started latter
     claim.state = CLAIMED; 
     rs = await updateEntity("claim", uid, claim);
+    /*
+    let txn = Sequencer.postTransaction(`claim-${uid}`, {
+      type: 'CREATE_CLAIM_VOTING_ACCOUNT',
+      claimUid: uid,
+      strategy: plan.strathegy
+    })
+    */
   }
 
   // check if we need to wait for Payment
@@ -231,7 +238,7 @@ export async function submitClaim(params: {
         console.log("Succcess. Must start the voting process.");
 
         // we dont await for it, we just let it start whenever it can
-        startClaimVotingProcess(params);
+        // startClaimVotingProcess(params);
       }, 
       async (params: any, err: any) => {
         logger.error(err);

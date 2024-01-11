@@ -18,6 +18,22 @@ export async function getMasterPlan(uid: string) {
   let plan = await prisma.plan.findUnique({
     where: { uid: uid }
   });
-  
+  return plan ; 
+}
+
+/**
+ * Change only the plan state.
+ * @param uid 
+ * @param state 
+ * @returns the modified plan
+ */
+export async function changeMasterPlanState(uid: string, state: number) {
+  let plan = await prisma.plan.update({
+    where: { uid: uid },
+    data: {
+      state: state,
+      updatedUTC: (new Date()).toISOString()
+    }
+  });
   return plan ; 
 }

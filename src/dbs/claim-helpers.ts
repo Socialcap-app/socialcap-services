@@ -1,11 +1,22 @@
-import { UID } from "@socialcap/contracts";
-import { CLAIMED, WAITING, UNPAID, VOTING } from "@socialcap/contracts";
+import { UID } from "@socialcap/contracts-lib";
+import { CLAIMED, WAITING, UNPAID, VOTING } from "@socialcap/contracts-lib";
 import { fastify, prisma, logger } from "../global.js";
+
+/**
+ * Gets a claim given its unique uid.
+ * @param uid 
+ * @returns Claim object (prisma.claim) or Null
+ */
+export async function getClaim(uid: string) {
+  let data = await prisma.claim.findUnique({ where: { uid: uid }});
+  return data; 
+}
 
 /**
  * Gets all claim instance data that are in a voting state (CLAIMED).
  * We need them for doing rollups over and over again.
  * @param params 
+ * @returns array of running claims
  */
 export async function getRunningClaims(params?: any) {
   // all commnunity Uids where is a a member
@@ -16,6 +27,12 @@ export async function getRunningClaims(params?: any) {
   return claims || [];
 }
 
+/**
+ * Get all claims in the given states, belonging to this plan. 
+ * @param planUid 
+ * @param params 
+ * @returns 
+ */
 export async function getClaimsByPlan(planUid: string, params: {
   states: number[]
 }) {

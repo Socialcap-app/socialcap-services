@@ -6,12 +6,49 @@ import { OffchainMerkleMap } from "./offchain-merkle-map.js";
 import { NULLIFIER_MERKLE_MAP } from "./index.js"
 import { raiseError } from "../responses.js";
 
+
+interface NullifierJSON {
+  toJSON: () => string,
+  fromJSON: (json: string) => NullifierJSON, 
+}
+
+export async function saveJSON<T extends NullifierJSON>(uid: string, nullifier: T): Promise<T> {
+  let json = nullifier.toJSON();
+  return nullifier;
+}
+
+export async function getJSON<T extends NullifierJSON>(uid: string, nullifier: T): Promise<T> {
+  let json = "{}";
+  nullifier.fromJSON(json);
+  return nullifier;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+////This code will be DEPRECATED ////
+
 export {
+  ////This code will be DEPRECATED ////
   addElectorsToNullifier,
   getNullifierProxy,
   getNullifierOrRaise,
   updateNullifier,
   getNullifierLeafs
+  ////This code will be DEPRECATED ////
 }
 
 const ASSIGNED_VOTE = Field(1); 
@@ -128,3 +165,5 @@ async function getNullifierOrRaise(): Promise<OffchainMerkleMap> {
   let map: OffchainMerkleMap = rs.data;
   return map;
 }
+
+////////////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,5 @@
 import { prisma, logger } from "../global.js";
-import { WAITING, DONE, IGNORED, REJECTED, UID } from "@socialcap/contracts";
+import { WAITING, DONE, IGNORED, REJECTED, UID } from "@socialcap/contracts-lib";
 
 export interface SignedData {
   publicKey: string;
@@ -37,7 +37,7 @@ export async function createVotesBatch(params: {
     // we just ignore this batch, because it has no votes
     return null;
 
-  // get the first vote for this params, since they are repaated 
+  // get the first vote for this params, since they are repeated 
   // for every vote in the batch
   let firstVote = votes[0]; 
 
@@ -67,7 +67,7 @@ export async function createVotesBatch(params: {
 /**
  * Returns the list of batches belonging to a given plan and filtered by state
  * @param planUid 
- * @param state 
+ * @param { state: [] } 
  * @returns array of batches
  */
 export async function getBatchesByPlan(planUid: string, params: { 

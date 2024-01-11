@@ -1,5 +1,5 @@
 /**
- * Implements the strategie set up in a Plan
+ * Implements the strategy set up in a Plan
  */
 import { logger } from "../global.js";
 import { selectRandomAnonyomusValidators } from "./strategies/anonymous-ramdom-validators.js";

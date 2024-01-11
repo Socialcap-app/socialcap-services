@@ -1,11 +1,10 @@
-import { Worker, isMainThread, parentPort, workerData } from "worker_threads";
 import { Mina, AccountUpdate, PrivateKey, PublicKey, Field } from "o1js";
 import { ClaimVotingContract } from "@socialcap/claim-voting";
 import { UID } from "@socialcap/contracts-lib";
-import { Payers } from "./payers.js"
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
 import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
 import { updateClaimAccountId } from "../../dbs/claim-helpers.js";
+
 export { CreateClaimVotingAccountDispatcher };
 
 
@@ -37,7 +36,6 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
     const { claimUid, strategy } = txnData.data;
     
     console.log("Sender ", sender.accountId);
-    
     const deployer = {
       address: sender.accountId,
       publicKey: PublicKey.fromBase58(sender.accountId),

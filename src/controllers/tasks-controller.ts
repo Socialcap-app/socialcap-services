@@ -1,13 +1,15 @@
 import { PublicKey, Field } from "o1js";
 import { NullifierProxy, UID } from "@socialcap/contracts";
-import { CANCELED,ASSIGNED,DONE,IGNORED } from "@socialcap/contracts";
+import { CANCELED,ASSIGNED,DONE,IGNORED } from "@socialcap/contracts-lib";
+import { BatchVoteNullifier, BatchVoteNullifierLeaf } from "@socialcap/batch-voting";
 import { fastify, prisma, logger } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { waitForTransaction } from "../services/mina-transactions.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
-import { getNullifierLeafs, updateNullifier } from "../dbs/nullifier-helpers.js";
+import { saveJSON } from "../dbs/nullifier-helpers.js";
 import { CommunityMembers } from "../dbs/members-helper.js";
 import { createVotesBatch } from "../dbs/batch-helpers.js";
+import { Sequencer } from "../sequencer/core/index.js";
 
 export async function getTask(params: any) {
   const uid = params.uid;
@@ -82,7 +84,9 @@ export async function submitTask(params: {
   uid: string,
   senderAccountId: string,
   claimUid: string,
-  extras: { addToQueue: boolean }
+  extras: { 
+    addToQueue: boolean // TRUE if Batch, FALSE otherwise
+  } 
   user: any,
 }) {
   const uid = params.uid;
@@ -97,15 +101,13 @@ export async function submitTask(params: {
   /**
    * We will do this latter because we will be doing Batch processing of the Votes 
   */
- if (! addToQueue) {
+  if (! addToQueue) {
     // we need to also update the Nullifier !
     let key: Field = NullifierProxy.key(
       PublicKey.fromBase58(params.senderAccountId),
       UID.toField(params.claimUid)
     )
-
     let state: Field = Field(DONE);
-    await updateNullifier(key, state);  
   }
 
   return hasResult({
@@ -117,6 +119,10 @@ export async function submitTask(params: {
 
 /**
  * Submits a batch of votes for many claims and tasks
+ * @param senderAccountId
+ * @param signedData
+ * @param extras - { addToQueue: boolean } addToQueue=true
+ * @param user
  */
 export async function submitTasksBatch(params: {
   senderAccountId: string,
@@ -131,18 +137,28 @@ export async function submitTasksBatch(params: {
   let votes = JSON.parse(signedData.data || "[]") as any[];
 
   let tasks = [];
+  let leafs: { value: Field }[] = [];
   for (let j=0; j < votes.length; j++) {
+    let vote = votes[j];
+
     // change the state of the Task
     let task = await prisma.task.update({
       where: { uid: votes[j].uid },
       data: { 
         state:  DONE, 
-        result: votes[j].result 
+        result: votes[j].result // $TODO$ this MUST be hidden 
       },    
     })
    
-    // chain the state of the claim ??? NOT Yet
+    // change the state of the claim ??? NOT Yet
     tasks.push(task);
+
+    // create a Nullifier leaf for each vote so we can build the nullifier
+    leafs.push({ value: BatchVoteNullifierLeaf.value(
+      PublicKey.fromBase58(senderAccountId),
+      UID.toField(vote.claimUid),
+      Field(vote.result)
+    )})
   }
 
   // create and save the Batch for processing
@@ -152,9 +168,24 @@ export async function submitTasksBatch(params: {
   });
   logger.info(`VotesBatch created uid=${batch.uid} sequence=${batch.sequence} size=${batch.size} state=${batch.state}`);
 
+  // create the BatchVote Nullifier and save it
+  let nullifier = new BatchVoteNullifier().addLeafs(leafs);
+  await saveJSON<BatchVoteNullifier>(`batch-vote-nullifier-${batch.uid}`, nullifier);
+  logger.info(`BatchVoteNullifier created uid=${batch.uid} root=${nullifier.root()}`);
+
+  // finally send the Batch to MINA
+  let txn = await Sequencer.postTransaction(`batch-${batch.uid}`, {
+    type: 'RECEIVE_VOTES_BATCH',
+    data: {
+      batchUid: batch.uid,
+      senderAccountId: params.senderAccountId,
+      signedData: params.signedData      
+    }
+  })
+
   return hasResult({
     tasks: tasks,
-    transaction: { id:"" } // { id: params.txn?.hash || "" }
+    transaction: { id: txn.uid } // { id: params.txn?.hash || "" }
   })
 }
 
@@ -163,6 +194,6 @@ export async function submitTasksBatch(params: {
  * Helpers
  */
 export async function getNullifier(params: any) {
-  let leafs = await getNullifierLeafs();
+  let leafs = {};//await getNullifierLeafs();
   return hasResult(leafs);
 }

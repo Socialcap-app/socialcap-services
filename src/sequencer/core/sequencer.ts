@@ -296,9 +296,10 @@ class Sequencer {
     type: string,
     data: object
   }): Promise<any> {
-    let tx = await TransactionsQueue
+    let txn = await TransactionsQueue
       .queue(queueId)
       .push(params);
-    log.postedTxn(tx);
+    log.postedTxn(txn);
+    return txn;
   }
 }

@@ -1,4 +1,7 @@
-import { CLAIMED, WAITING, VOTING } from "@socialcap/contracts-lib";
+import { PublicKey, Field } from "o1js";
+import { CLAIMED, WAITING, VOTING, UID } from "@socialcap/contracts-lib";
+import { ClaimElectorNullifier } from "@socialcap/claim-voting";
+import { BatchVoteNullifier } from "@socialcap/batch-voting";
 import { getMasterPlan } from "../dbs/plan-helpers.js";
 import { getClaimsByPlan, updateClaimAccountId } from "../dbs/claim-helpers.js";
 import { getBatchesByPlan } from "../dbs/batch-helpers.js";
@@ -78,22 +81,45 @@ async function startTallying(planUid: string, options: {}) {
 }
 
 
+
 async function dispatchBatchVotes(
   batch: any,
   claims: any[],
   plan: any
-): Promise<number> {
+  ): Promise<number> {
   // check signature and decrypt data
-  
+
   // build a claims Dictio to improve searching a claim
   const claimsDictio = new Map<string, any>();
   claims.forEach((claim) => {
     claimsDictio.set(claim.uid, claim);
   })
+  
+  // votes in the batch
+  let votes: SignedVote[] = JSON.parse(batch.signedData || "[]");
 
-  // we traverse all votes in the batch
-  let votes = JSON.parse(batch.signedData || "[]");
+  // build batches MT and nullifiers for batch
+  let votesInBatch = new BatchVoteNullifier();
+  let electorsInClaim = new ClaimElectorNullifier();
 
+  for (let j=0; j < votes.length; j++) {
+    let vote = votes[j];
+    let electorPuk = PublicKey.fromBase58(vote.assigneeUid)
+    let claimField = UID.toField(vote.claimUid)
+
+//     votesInBatch.addLeafs([{
+//       electorPuk: electorPuk, 
+//       claimUid:  claimField, 
+//       result: Field(vote.result),
+//     }])
+// 
+//     // build Nullifier for votes
+//     electorsInClaim.addElectors(
+//       claimField, 
+//       [ electorPuk ]
+//     ); 
+  }
+  
   let count = 0;
 
   for (let j=0; j < votes.length; j++) {
