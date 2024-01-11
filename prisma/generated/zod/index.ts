@@ -30,7 +30,7 @@ export const PlanScalarFieldEnumSchema = z.enum(['uid','communityUid','state','n
 
 export const CredentialScalarFieldEnumSchema = z.enum(['uid','accountId','applicantId','claimId','applicantUid','communityUid','claimUid','type','description','community','image','alias','stars','metadata','revocable','issuedUTC','expiresUTC']);
 
-export const TaskScalarFieldEnumSchema = z.enum(['uid','claimUid','assigneeUid','state','assignedUTC','completedUTC','dueUTC','rewarded','reason','result']);
+export const TaskScalarFieldEnumSchema = z.enum(['uid','planUid','claimUid','assigneeUid','state','assignedUTC','completedUTC','dueUTC','rewarded','reason','result']);
 
 export const ProposedScalarFieldEnumSchema = z.enum(['uid','role','personUid','communityUid','createdUTC']);
 
@@ -321,6 +321,7 @@ export type CredentialPartial = z.infer<typeof CredentialPartialSchema>
 
 export const TaskSchema = z.object({
   uid: z.string(),
+  planUid: z.string(),
   claimUid: z.string(),
   assigneeUid: z.string(),
   state: z.number().int(),

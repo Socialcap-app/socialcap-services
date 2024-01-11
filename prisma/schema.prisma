@@ -205,6 +205,7 @@ model Credential {
 
 model Task {
   uid          String    @id @unique
+  planUid      String    @map("plan_uid") @default("")
   claimUid     String    @map("claim_uid")
   assigneeUid  String    @map("assignee_uid")
   state        Int       @default(0)
