@@ -1,13 +1,13 @@
-[Socialcap API](../README.md) / [Modules](../modules.md) / controllers
+[Socialcap API](../README.md) / [Exports](../modules.md) / index
 
-# Module: controllers
+# Module: index
 
 ## Table of contents
 
 ### Variables
 
-- [mutationHandlers](controllers.md#mutationhandlers)
-- [queryHandlers](controllers.md#queryhandlers)
+- [mutationHandlers](index.md#mutationhandlers)
+- [queryHandlers](index.md#queryhandlers)
 
 ## Variables
 
@@ -73,7 +73,7 @@
 
 #### Defined in
 
-[src/controllers/index.ts:20](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/index.ts#L20)
+[index.ts:20](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/index.ts#L20)
 
 ___
 
@@ -139,4 +139,4 @@ ___
 
 #### Defined in
 
-[src/controllers/index.ts:41](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/index.ts#L41)
+[index.ts:41](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/index.ts#L41)

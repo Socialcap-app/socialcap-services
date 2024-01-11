@@ -1,0 +1,14 @@
+{
+  // "$schema": "https://typedoc.org/schema.json",
+  "name": "Socialcap API",
+  "plugin": ["typedoc-plugin-markdown"],
+  // "plugin": ["typedoc-plugin-merge-modules"],
+  "entryPoints": ["../src/controllers"],
+  "exclude": ["../src/controllers/empty-set.ts", "../src/controllers/no-actions.ts"],
+  "entryPointStrategy": "expand", 
+  // "entryPointStrategy": "resolve", 
+  "out": "./api/reference",
+  "emit": "both",
+  "cleanOutputDir": true,
+  "githubPages": false,
+}

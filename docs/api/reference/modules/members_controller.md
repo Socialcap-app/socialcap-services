@@ -1,14 +1,14 @@
-[Socialcap API](../README.md) / [Modules](../modules.md) / controllers/members-controller
+[Socialcap API](../README.md) / [Exports](../modules.md) / members-controller
 
-# Module: controllers/members-controller
+# Module: members-controller
 
 ## Table of contents
 
 ### Functions
 
-- [joinCommunity](controllers_members_controller.md#joincommunity)
-- [promoteMember](controllers_members_controller.md#promotemember)
-- [updateMemberRole](controllers_members_controller.md#updatememberrole)
+- [joinCommunity](members_controller.md#joincommunity)
+- [promoteMember](members_controller.md#promotemember)
+- [updateMemberRole](members_controller.md#updatememberrole)
 
 ## Functions
 
@@ -28,7 +28,7 @@
 
 #### Defined in
 
-[src/controllers/members-controller.ts:7](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/members-controller.ts#L7)
+[members-controller.ts:7](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/members-controller.ts#L7)
 
 ___
 
@@ -48,7 +48,7 @@ ___
 
 #### Defined in
 
-[src/controllers/members-controller.ts:62](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/members-controller.ts#L62)
+[members-controller.ts:62](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/members-controller.ts#L62)
 
 ___
 
@@ -72,4 +72,4 @@ ___
 
 #### Defined in
 
-[src/controllers/members-controller.ts:34](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/members-controller.ts#L34)
+[members-controller.ts:34](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/members-controller.ts#L34)

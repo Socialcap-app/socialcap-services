@@ -1,14 +1,14 @@
-[Socialcap API](../README.md) / [Modules](../modules.md) / controllers/persons-controller
+[Socialcap API](../README.md) / [Exports](../modules.md) / persons-controller
 
-# Module: controllers/persons-controller
+# Module: persons-controller
 
 ## Table of contents
 
 ### Functions
 
-- [getProfile](controllers_persons_controller.md#getprofile)
-- [signUp](controllers_persons_controller.md#signup)
-- [updateProfile](controllers_persons_controller.md#updateprofile)
+- [getProfile](persons_controller.md#getprofile)
+- [signUp](persons_controller.md#signup)
+- [updateProfile](persons_controller.md#updateprofile)
 
 ## Functions
 
@@ -28,7 +28,7 @@
 
 #### Defined in
 
-[src/controllers/persons-controller.ts:64](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/persons-controller.ts#L64)
+[persons-controller.ts:64](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/persons-controller.ts#L64)
 
 ___
 
@@ -57,7 +57,7 @@ MutationResult
 
 #### Defined in
 
-[src/controllers/persons-controller.ts:14](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/persons-controller.ts#L14)
+[persons-controller.ts:14](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/persons-controller.ts#L14)
 
 ___
 
@@ -77,4 +77,4 @@ ___
 
 #### Defined in
 
-[src/controllers/persons-controller.ts:71](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/persons-controller.ts#L71)
+[persons-controller.ts:71](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/persons-controller.ts#L71)

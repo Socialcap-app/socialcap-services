@@ -1,17 +1,17 @@
-[Socialcap API](../README.md) / [Modules](../modules.md) / controllers/communities-controller
+[Socialcap API](../README.md) / [Exports](../modules.md) / communities-controller
 
-# Module: controllers/communities-controller
+# Module: communities-controller
 
 ## Table of contents
 
 ### Functions
 
-- [getAdminedCommunity](controllers_communities_controller.md#getadminedcommunity)
-- [getAllCommunities](controllers_communities_controller.md#getallcommunities)
-- [getCommunity](controllers_communities_controller.md#getcommunity)
-- [getMyCommunities](controllers_communities_controller.md#getmycommunities)
-- [prepareCommunityClaimsDownload](controllers_communities_controller.md#preparecommunityclaimsdownload)
-- [updateCommunity](controllers_communities_controller.md#updatecommunity)
+- [getAdminedCommunity](communities_controller.md#getadminedcommunity)
+- [getAllCommunities](communities_controller.md#getallcommunities)
+- [getCommunity](communities_controller.md#getcommunity)
+- [getMyCommunities](communities_controller.md#getmycommunities)
+- [prepareCommunityClaimsDownload](communities_controller.md#preparecommunityclaimsdownload)
+- [updateCommunity](communities_controller.md#updatecommunity)
 
 ## Functions
 
@@ -35,7 +35,7 @@ masterplans, etc...
 
 #### Defined in
 
-[src/controllers/communities-controller.ts:33](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/communities-controller.ts#L33)
+[communities-controller.ts:33](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/communities-controller.ts#L33)
 
 ___
 
@@ -55,7 +55,7 @@ ___
 
 #### Defined in
 
-[src/controllers/communities-controller.ts:116](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/communities-controller.ts#L116)
+[communities-controller.ts:116](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/communities-controller.ts#L116)
 
 ___
 
@@ -75,7 +75,7 @@ ___
 
 #### Defined in
 
-[src/controllers/communities-controller.ts:11](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/communities-controller.ts#L11)
+[communities-controller.ts:11](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/communities-controller.ts#L11)
 
 ___
 
@@ -95,7 +95,7 @@ ___
 
 #### Defined in
 
-[src/controllers/communities-controller.ts:90](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/communities-controller.ts#L90)
+[communities-controller.ts:90](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/communities-controller.ts#L90)
 
 ___
 
@@ -117,7 +117,7 @@ ___
 
 #### Defined in
 
-[src/controllers/communities-controller.ts:135](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/communities-controller.ts#L135)
+[communities-controller.ts:135](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/communities-controller.ts#L135)
 
 ___
 
@@ -137,4 +137,4 @@ ___
 
 #### Defined in
 
-[src/controllers/communities-controller.ts:67](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/communities-controller.ts#L67)
+[communities-controller.ts:67](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/communities-controller.ts#L67)

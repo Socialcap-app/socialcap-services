@@ -1,16 +1,16 @@
-[Socialcap API](../README.md) / [Modules](../modules.md) / controllers/tasks-controller
+[Socialcap API](../README.md) / [Exports](../modules.md) / tasks-controller
 
-# Module: controllers/tasks-controller
+# Module: tasks-controller
 
 ## Table of contents
 
 ### Functions
 
-- [getMyTasks](controllers_tasks_controller.md#getmytasks)
-- [getNullifier](controllers_tasks_controller.md#getnullifier)
-- [getTask](controllers_tasks_controller.md#gettask)
-- [submitTask](controllers_tasks_controller.md#submittask)
-- [submitTasksBatch](controllers_tasks_controller.md#submittasksbatch)
+- [getMyTasks](tasks_controller.md#getmytasks)
+- [getNullifier](tasks_controller.md#getnullifier)
+- [getTask](tasks_controller.md#gettask)
+- [submitTask](tasks_controller.md#submittask)
+- [submitTasksBatch](tasks_controller.md#submittasksbatch)
 
 ## Functions
 
@@ -30,7 +30,7 @@
 
 #### Defined in
 
-[src/controllers/tasks-controller.ts:32](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/tasks-controller.ts#L32)
+[tasks-controller.ts:32](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/tasks-controller.ts#L32)
 
 ___
 
@@ -52,7 +52,7 @@ Helpers
 
 #### Defined in
 
-[src/controllers/tasks-controller.ts:196](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/tasks-controller.ts#L196)
+[tasks-controller.ts:196](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/tasks-controller.ts#L196)
 
 ___
 
@@ -72,7 +72,7 @@ ___
 
 #### Defined in
 
-[src/controllers/tasks-controller.ts:14](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/tasks-controller.ts#L14)
+[tasks-controller.ts:14](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/tasks-controller.ts#L14)
 
 ___
 
@@ -100,7 +100,7 @@ Submits one particular Task
 
 #### Defined in
 
-[src/controllers/tasks-controller.ts:83](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/tasks-controller.ts#L83)
+[tasks-controller.ts:83](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/tasks-controller.ts#L83)
 
 ___
 
@@ -127,4 +127,4 @@ Submits a batch of votes for many claims and tasks
 
 #### Defined in
 
-[src/controllers/tasks-controller.ts:127](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/tasks-controller.ts#L127)
+[tasks-controller.ts:127](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/tasks-controller.ts#L127)

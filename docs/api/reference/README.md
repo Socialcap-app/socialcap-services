@@ -1,4 +1,4 @@
-Socialcap API / [Modules](modules.md)
+Socialcap API / [Exports](modules.md)
 
 # Socialcap services
 

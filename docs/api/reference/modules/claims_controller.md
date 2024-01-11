@@ -1,19 +1,19 @@
-[Socialcap API](../README.md) / [Modules](../modules.md) / controllers/claims-controller
+[Socialcap API](../README.md) / [Exports](../modules.md) / claims-controller
 
-# Module: controllers/claims-controller
+# Module: claims-controller
 
 ## Table of contents
 
 ### Functions
 
-- [addClaim](controllers_claims_controller.md#addclaim)
-- [getClaim](controllers_claims_controller.md#getclaim)
-- [getMyClaimables](controllers_claims_controller.md#getmyclaimables)
-- [getMyClaims](controllers_claims_controller.md#getmyclaims)
-- [getRunningClaims](controllers_claims_controller.md#getrunningclaims)
-- [submitClaim](controllers_claims_controller.md#submitclaim)
-- [updateClaim](controllers_claims_controller.md#updateclaim)
-- [updateClaimState](controllers_claims_controller.md#updateclaimstate)
+- [addClaim](claims_controller.md#addclaim)
+- [getClaim](claims_controller.md#getclaim)
+- [getMyClaimables](claims_controller.md#getmyclaimables)
+- [getMyClaims](claims_controller.md#getmyclaims)
+- [getRunningClaims](claims_controller.md#getrunningclaims)
+- [submitClaim](claims_controller.md#submitclaim)
+- [updateClaim](claims_controller.md#updateclaim)
+- [updateClaimState](claims_controller.md#updateclaimstate)
 
 ## Functions
 
@@ -35,7 +35,7 @@ Mutations
 
 #### Defined in
 
-[src/controllers/claims-controller.ts:147](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/claims-controller.ts#L147)
+[claims-controller.ts:147](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/claims-controller.ts#L147)
 
 ___
 
@@ -55,7 +55,7 @@ ___
 
 #### Defined in
 
-[src/controllers/claims-controller.ts:25](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/claims-controller.ts#L25)
+[claims-controller.ts:25](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/claims-controller.ts#L25)
 
 ___
 
@@ -75,7 +75,7 @@ ___
 
 #### Defined in
 
-[src/controllers/claims-controller.ts:71](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/claims-controller.ts#L71)
+[claims-controller.ts:71](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/claims-controller.ts#L71)
 
 ___
 
@@ -95,7 +95,7 @@ ___
 
 #### Defined in
 
-[src/controllers/claims-controller.ts:32](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/claims-controller.ts#L32)
+[claims-controller.ts:32](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/claims-controller.ts#L32)
 
 ___
 
@@ -118,7 +118,7 @@ We need them for doing rollups over and over again.
 
 #### Defined in
 
-[src/controllers/claims-controller.ts:132](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/claims-controller.ts#L132)
+[claims-controller.ts:132](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/claims-controller.ts#L132)
 
 ___
 
@@ -141,7 +141,7 @@ ___
 
 #### Defined in
 
-[src/controllers/claims-controller.ts:198](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/claims-controller.ts#L198)
+[claims-controller.ts:198](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/claims-controller.ts#L198)
 
 ___
 
@@ -161,7 +161,7 @@ ___
 
 #### Defined in
 
-[src/controllers/claims-controller.ts:163](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/claims-controller.ts#L163)
+[claims-controller.ts:163](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/claims-controller.ts#L163)
 
 ___
 
@@ -184,4 +184,4 @@ ___
 
 #### Defined in
 
-[src/controllers/claims-controller.ts:176](https://github.com/Identicon-Dao/socialcap-services/blob/50fabe6c/src/controllers/claims-controller.ts#L176)
+[claims-controller.ts:176](https://github.com/Identicon-Dao/socialcap-services/blob/21d5347d/src/controllers/claims-controller.ts#L176)
