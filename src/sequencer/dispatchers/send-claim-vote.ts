@@ -6,6 +6,7 @@ import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } 
 import { OffchainMerkleStorage } from "../../dbs/offchain-merkle-storage.js";
 import { getClaim } from "../../dbs/claim-helpers.js";
 import { BatchVoteNullifier } from "@socialcap/batch-voting";
+import { getJSON } from "../../dbs/nullifier-helpers.js";
 
 export { SendClaimVoteDispatcher };
 
@@ -23,13 +24,10 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
   }
 
   /**
-   * Creates a new zkApp using the ClaimVotingContract. Each claim has 
-   * its own zkApp account created just for doing the voting on it.
+   * Dispatches a vote to the zkApp Claim. The transaction creates an action 
+   * and dispatches it.  
    *
    * @param txnData: 
-   *  account: { id, publickKey, privateKey } keys of the account to create
-   *  claimUid: the Uid of the Claim binded to this account
-   *  strategy: {requiredVotes,requiredPositives...} params for voting
    * @returns result of successfull transaction
    * @throws exception on failure, will be handled by Sequencer.dispatcher
    */
@@ -55,14 +53,17 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
     const electorPuk = PublicKey.fromBase58(electorAccountId);
 
     // use the batchUid to get the BatchNullifier
-    const batchNullifier = new BatchVoteNullifier();
+    let batchNullifier = await getJSON<BatchVoteNullifier>(`batch-${batchUid}`, 
+      new BatchVoteNullifier()
+    ) as BatchVoteNullifier;
     const batchRoot = batchNullifier.root();
     const batchWitness = batchNullifier.witness(index);
 
-    // use the planUid to get the PlanNullifier
-    const planNullifier = new ClaimElectorNullifier();
-    const planRoot = planNullifier.root();
-    const planWitness = planNullifier.witness(ClaimElectorNullifierLeaf.key(
+    let claimNullifier = await getJSON<ClaimElectorNullifier>(`claim-${claimUid}`, 
+      new ClaimElectorNullifier()
+    ) as ClaimElectorNullifier;
+    const claimRoot = claimNullifier.root();
+    const claimWitness = claimNullifier.witness(ClaimElectorNullifierLeaf.key(
       electorPuk, claimUidf
     ));
 
@@ -82,17 +83,6 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
       PublicKey.fromBase58(claim!.accountId)
     );
 
-/*     // we need to generate a new key pair for each deploy
-    const zkappPrivkey = PrivateKey.random();
-    const zkappPubkey = zkappPrivkey.toPublicKey();
-
-    let zkApp = new ClaimVotingContract(zkappPubkey);
-    log.zkAppInstance(zkappPubkey.toBase58());
-      
-    let fuid = UID.toField(claimUid);
-    let frv = Field(strategy.requiredVotes);
-    let frp = Field(strategy.requiredPositives); 
-    */
     let result = await this.proveAndSend(
       // the transaction 
       () => {
@@ -101,8 +91,8 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
           Field(vote), // +1 positive, -1 negative or 0 ignored
           batchRoot,
           batchWitness,
-          planRoot,
-          planWitness
+          claimRoot,
+          claimWitness
         ); 
       }, 
       deployer.publicKey, DEPLOY_TX_FEE,   // feePayer and fee
@@ -122,9 +112,8 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
     result: TxnResult
   ): Promise<TxnResult> {
     const { claimUid } = txnData.data;
-    // const { nullifierKey, voted } = result.data;
     /*
-    MUST update PlanNullifier.set(nullifierKey, DONE)
+    MUST update Nullifiers here ...
     */
     return result;
   }
@@ -133,7 +122,6 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
     txnData: RawTxnData, 
     result: TxnResult
   ): Promise<TxnResult> {
-    const { claimUid, accountId } = txnData.data;
     return result;
   }
 }
