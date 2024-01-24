@@ -1,54 +1,85 @@
-import { TransactionsQueue, TxnResult, WAITING, REVISION, MAX_RETRIES } from "./transaction-queues.js";
+import { TransactionsQueue, TxnResult, RawTxnData } from "./transaction-queues.js";
+import { WAITING, RETRY, REVISION, MAX_RETRIES } from "./transaction-queues.js";
 import { SequencerLogger as log } from "./logs.js";
 import { DispatcherProxy } from "./dispatcher-proxy.js";
 import { Sender, SendersPool } from "./senders-pool.js";
-import { sender } from "o1js/dist/node/lib/mina.js";
+import { MUST_RETRY, RETRYING, MUST_INCLUDE, WAITING_INCLUSION } from "./senders-pool.js"
+import { UNRESOLVED_ERROR, WORKER_ERROR } from "./error-codes.js";
 
 export { Sequencer };
 
-
 class Sequencer {
 
-  static _queues = new Map<string, TransactionsQueue>;
+  private static _queues = new Map<string, TransactionsQueue>;
 
   // The set of Dispatchers used to submit transactions or actions
   // for a given type. There is one (and only one) Dispatcher per type.
-   static _dispatchers = new Map<string, DispatcherProxy>;
-  
+  private static _dispatchers = new Map<string, DispatcherProxy>;
+
+  private static RETRY_DELAY = 15000; // 15 secs
+
+  public static getQueue(name: string): TransactionsQueue {
+    return Sequencer._queues.get(name) as TransactionsQueue;
+  }  
+
+  public static getDispatcher(type: string): DispatcherProxy {
+    return Sequencer._dispatchers.get(type) as DispatcherProxy;
+  }  
+
   /**
-   * 
-   * @returns 
+   * Runs a sequncer cycle. This is controlled by an external scheduler
+   * which calls it ever N seconds.
    */
   static async run() {
     // get the running queues list
     let names = [...Sequencer._queues.keys()]; 
 
     for (let j=0; j < names.length; j++) {
-      
-      // 1. Check if we have a running transaction on course. If we have, we just pass.
-      let queue = Sequencer._queues.get(names[j]) as TransactionsQueue;
-      log.activeQueue(queue);      
-      if (queue.hasRunningTx())
-        continue; 
+      let queue = Sequencer.getQueue(names[j]);
 
-      // 2. If we have no running transactions
-      // Check if we have pending transactions to run. If not, just pass.
-      // If we have pending transactions, we retrieve the first one from the Queue (FIFO).
-      let pendingTx = await queue.getFirstWaitingTransaction();
-      if (! pendingTx)
-        continue;
+      // is there a blocked Sender attached to this queue ?
+      let sender = SendersPool.getBlockedSender(queue.name());
 
-      // 3. Dispatch the pending transaction
-      // first mark it as running so we dont use it until it has finished
-      queue.setTxIsRunning(pendingTx.uid);
-      
-      // This is an asynchronous call, and will callback on Done or Failure.
-      try {
-        Sequencer.dispatch(queue, pendingTx);
-      } 
-      catch(err: any) {
-        console.log("Sequencer dispatch failed ERR=", err);
+      // we have a Sender and this means we have a transaction on course 
+      if (sender) {
+        // check how we are going with the running transaction
+        let runningTxn = await queue.getRunningTransaction();
+        if (!runningTxn)
+          continue;
+
+        if (runningTxn.state === WAITING) 
+          await Sequencer.dispatch(runningTxn, queue, sender);
+
+        if (runningTxn.state === REVISION) 
+          Sequencer.waitCompletion(runningTxn, queue, sender);
+
+        if (runningTxn.state === RETRY) 
+          Sequencer.waitRetry(runningTxn, queue, sender);
       }
+
+      // there are no running transactions on this Queue:
+      if (!sender) {
+        // check if we have pending transactions to run. 
+        // retrieve the first pending one from the Queue (FIFO)
+        let pendingTxn = await queue.getFirstWaitingTransaction();
+        if (! pendingTxn)
+          // no pending txns, we just pass.
+          continue;
+
+        // now we need  a free sender so we can dispatch it 
+        sender = SendersPool.getAvailableSender();
+        if (!sender) 
+          // if no sender available (all senders are taken)
+          // we need to continue till we can get an available sender
+          continue        
+
+        // we have an available sender ! 
+        // first block it now so nobody else can take it
+        SendersPool.blockSender(sender, queue.name());
+
+        // now we can dispatch the transaction 
+        await Sequencer.dispatch(pendingTxn, queue, sender);
+      }  
     }
 
     return Sequencer;
@@ -60,190 +91,134 @@ class Sequencer {
    * different states: WAITING, REVISION, DONE, FAILED, RETRY
    */
   static async dispatch(
+    txn: RawTxnData,
     queue: TransactionsQueue,
-    txData: any
+    sender: Sender
   ) {
-    if (! Sequencer._dispatchers.has(txData.type))
+    const dispatcher = Sequencer.getDispatcher(txn.type);
+    if (! dispatcher)
       return; // No dispatcher for this type, cant do anything
+    
+    // now we can dispatch
+    log.info(`Sequencer.dispatch queue=${sender.queue} worker=${sender.workerUrl} txn=${JSON.stringify(txn)}`)
+    let result = await dispatcher.dispatch(txn, sender); 
 
-    // get the Dispatcher which will dispatch this Txn type
-    let dispatcher = Sequencer._dispatchers.get(txData.type) as DispatcherProxy;
-    log.dispatching(txData);
+    log.result(`Sequencer.dispatch queue=${sender.queue}`, result); 
 
-    try {
-      // if a new transaction, need to dispatch it 
-      if (txData.state === WAITING) {
-        
-        // Check if we have an available sender signer for this queue
-        let sender = SendersPool.getAvailableSender();
-        if (! sender) {
-          // we have to wait for an available sender
-          // can't do anothing more here, just keep WAITING
-          return;
-        }
-
-        // block the sender so it is not used by another queue
-        SendersPool.blockSender(sender, queue.name());
-        log.info(`Sequencer.dispatch Sender id=${sender.accountId} worker=${sender.workerUrl}`)
-
-        // now we can dispatch, BUT we must fork this to run in different
-        // thread so we can send more than one Txn in the same block 
-        // currently we can not do it with o1js if running in same thread
-        let result = await dispatcher.dispatch(txData, sender); 
-        log.info(`Sequencer.dispatch dispatcher.sendToWorker result=${JSON.stringify(result)}`)
-
-        // UNSOLVED: there is some irrecoverable error and can do nothing 
-        if (result.error) {
-          await Sequencer.txnUnresolvedError(queue, txData, result);
-          SendersPool.freeSender(queue.name());
-          return;
-        }
-      
-        // success: was submitted and goes to revision for inclusion
-        log.dispatchedTxn(result);
-        await Sequencer.txnRevision(queue, txData, result);
-        return;        
-      }
-
-      // if not included yet, need to wait for it
-      if (txData.state === REVISION) {
-        let result = await dispatcher.waitForInclusion(txData.hash); 
-
-        // FAILED: but let's see if we can still retry
-        if (result.error) {
-          let max = MAX_RETRIES; // await dispatcher.maxRetries(sender);
-          let retryTxn = await Sequencer.txnRetry(queue, 
-            txData,  
-            max, 
-            result
-          );
-          if (retryTxn) {
-            SendersPool.freeSender(queue.name());
-            return;
-          }
-
-          // FULLY FAILED, no more retries
-          await Sequencer.txnFailure(queue, txData, result);
-          let sender = SendersPool.getBlockedSender(queue.name());
-          
-          // we now can try the onFailure callback with this result
-          // we need to trap this because it is not a Sequencer error
-          // but an specific dispatcher error
-          try {
-            result = await dispatcher.onFailure(txData, result, sender!);
-          }
-          catch (err) {
-            log.error(`Dispatcher.onFailure failed err=${err}`)
-          }
-
-          SendersPool.freeSender(queue.name());
-        }
-
-        // SUCCESS: and are done with it
-        await Sequencer.txnDone(queue, txData, result);
-        let sender = SendersPool.getBlockedSender(queue.name());
-        
-        // we now can try the onSuccess callback
-        // we need to trap this because it is not a Sequencer error
-        // but an specific dispatcher error
-        try {
-          result = await dispatcher.onSuccess(txData, result, sender!);
-        }
-        catch (err) {
-          log.error(`Dispatcher.onSuccess failed err=${err}`)
-        }
-
-        SendersPool.freeSender(queue.name());
-      }
-    }
-    catch (result: any) {
-      await Sequencer.txnUnresolvedError(queue, txData, {
-        hash: result.hash || "",
-        done: result.done || {},
-        error: result.error || result
-      });
+    // WORKER_ERROR: either we can not connect to worker or the network is down 
+    // or there is something that does not allow us to call the worker
+    if (result.error?.code === WORKER_ERROR) {
+      // we dont change the transaction state so we can
+      // continue trying till worker is available again
+      // but we release the queue so it does not remain blocked
       SendersPool.freeSender(queue.name());
       return;
     }
-  }
 
-  // Send failed and we cant do anything to solve this
-  // probably is a code error that raised an exception
-  static async txnUnresolvedError(
-    queue: TransactionsQueue, 
-    pendingTxn: any, 
-    result: TxnResult
-  ) {
-    let unresolvedTx = await queue.closeUnresolvedTransaction(pendingTxn.uid, {
+    // UNSOLVED: there is some irrecoverable error (possibly because some 
+    // coding problem or bad configuartion) and we can do nothing 
+    if (result.error?.code === UNRESOLVED_ERROR) {
+      log.error(result.error);
+      let unresolvedTxn = await queue.closeUnresolvedTransaction(txn.uid, {
+        result: result
+      })
+      SendersPool.freeSender(queue.name());
+      return;
+    }
+
+    // maybe is a Txn error, and we can retry the Txn
+    if (result.error) {
+      log.error(result.error);
+      let retryTxn = await queue.retryTransaction(txn.uid);
+      SendersPool.changeSenderState(queue.name(), MUST_RETRY);
+      return;
+    }
+
+    // we got to REVISION and have to wait to be included in block 
+    log.info(`Sequencer.dispatch pending txn=${result.hash}`);
+    let revisionTx = await queue.closeRevisionTransaction(txn.uid, {
       result: result
     })
-    log.error(result.error);
-    queue.setNoRunningTx(); // free to run other one
-    return unresolvedTx;
-  };
-
-  // the Transaction was submitted to Mina but it has not been included
-  // in a block yet. It is in REVISION state so we have to wait.
-  static async txnRevision(
-    queue: TransactionsQueue, 
-    pendingTxn: any, 
-    result: TxnResult
-  ) {
-    let revisionTx = await queue.closeRevisionTransaction(pendingTxn.uid, {
-      result: result
-    })
-    queue.setNoRunningTx(); // free to run other one
-    return revisionTx;
-  };
-
-  // the Action was succesfull so we update the transaction status
-  static async txnDone(
-    queue: TransactionsQueue, 
-    pendingTxn: any, 
-    result: TxnResult
-  ) {
-    let doneTx = await queue.closeSuccessTransaction(pendingTxn.uid, {
-      result: result
-    })
-    queue.setNoRunningTx(); // free to run other one
-    return doneTx;
-  };
-
-  // the Action has failed BUT anyway must update transaction status
-  static async txnFailure(
-    queue: TransactionsQueue, 
-    pendingTxn: any, 
-    result: TxnResult
-  ) {
-    log.error(result.error);
-    result.error = result.error || {};
-    let failedTx = await queue.closeFailedTransaction(pendingTxn.uid, {
-      result: result
-    })
-    queue.setNoRunningTx(); // free to run other one
-    return failedTx;
-  }
-
-  // the Action has failed BUT we may retry it
-  static async txnRetry(
-    queue: TransactionsQueue, 
-    pendingTxn: any, 
-    maxRetries: number,
-    result: TxnResult
-  ): Promise<any> {
-    log.error(result.error);
-    // we check if we have some retries left, and increment its count
-    // so it can still be processed in the next cycle
-    let retries = await queue.getTransactionRetries(pendingTxn.uid);
-    if (retries <= maxRetries) {
-      let retryTx = await queue.retryTransaction(pendingTxn.uid);
-      queue.setNoRunningTx(); // free to run other one
-      return retryTx;
-    } 
-    return null;
+    SendersPool.changeSenderState(queue.name(), MUST_INCLUDE);
+    return;        
   }
 
 
+  /**
+   * Wait till the current transaction has been included in a block.
+   * This may take a long time so we dont wait for it, but just poll
+   * the GraphQL endpoint to see if it has finished, and when finished 
+   * we run the corresponding callback.
+   *  
+   */
+  static async waitCompletion(
+    txn: RawTxnData,
+    queue: TransactionsQueue,
+    sender: Sender
+  ) { 
+    if (txn.state === REVISION && sender.state === WAITING_INCLUSION) 
+      return;
+
+    if (txn.state === REVISION && sender.state === MUST_INCLUDE) {
+      const dispatcher = Sequencer.getDispatcher(txn.type);
+      
+      // now we must start waiting and check till inclusion or failure
+      SendersPool.changeSenderState(queue.name(), WAITING_INCLUSION);
+
+      dispatcher.waitForInclusion(txn.hash!, async (result: TxnResult) => {
+        // check if we can RETRY
+        if (result?.error && sender.retries < MAX_RETRIES) {
+          // we must change txn to RETRY state
+          let retryTxn = await queue.retryTransaction(txn.uid);
+          SendersPool.changeSenderState(queue.name(), MUST_RETRY);
+          return;
+        }
+
+        // check if we have FULLY FAILED 
+        if (result?.error && sender.retries >= MAX_RETRIES) {
+          // we dont have any retries left !
+          let failedTxn = await queue.closeFailedTransaction(txn.uid, { 
+            result:result
+          });
+          await dispatcher.onFailure(failedTxn, result, sender);
+          SendersPool.freeSender(queue.name());
+          return;
+        }
+
+        // we are DONE !
+        let doneTxn = await queue.closeSuccessTransaction(txn.uid, {
+          result:result
+        });
+        await dispatcher.onSuccess(doneTxn, result, sender);
+        SendersPool.freeSender(queue.name());
+        return;
+      }); 
+    }
+  }
+
+  /**
+   * Wait sometime before we can retry a failed transaction. And when 
+   * delay is out, dispatch the transaction.
+   */
+  static async waitRetry(
+    txn: RawTxnData,
+    queue: TransactionsQueue,
+    sender: Sender
+  ) {  
+    if (txn.state === RETRY && sender.state === RETRYING) 
+      return;
+
+    if (txn.state === RETRY && sender.state === MUST_RETRY) {
+      // we must waiting a little before retrying 
+      SendersPool.changeSenderState(queue.name(), RETRYING);
+      await delay(Sequencer.RETRY_DELAY);
+
+      // now we can dispatch it ...
+      const dispatcher = Sequencer.getDispatcher(txn.type);
+      await Sequencer.dispatch(txn, queue, sender);
+    }
+  }
+  
   /**
    * Cleanup queues, because there may be queues that have no more transactions
    * to process but are still in the Sequencer queues map. So we need to remove
@@ -309,4 +284,11 @@ class Sequencer {
     log.postedTxn(txn);
     return txn;
   }
+}
+
+
+/** Helpers **/
+
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

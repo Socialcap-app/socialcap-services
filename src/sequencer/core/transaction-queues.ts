@@ -4,6 +4,7 @@
 import { prisma } from "../../global.js";
 import { UID } from '@socialcap/contracts';
 import { SequencerLogger as log } from "./logs.js";
+import { IError } from "./error-codes.js";
 
 const 
   WAITING = 101,
@@ -27,12 +28,14 @@ interface RawTxnData {
   uid: string;
   type: string;
   data: any; // A parsed JSON object
+  state?: number; // REVISION, RETRY, WAITING
+  hash?: string; // the MINA txn hash (if send was successful)
 }
 
 interface TxnResult {
   hash: string,
   done: object, // A parsed JSON object
-  error?: object,
+  error?: IError,
   data?: object // modified txn data
 }
 
@@ -106,11 +109,11 @@ class TransactionsQueue {
    */
   async getFirstWaitingTransaction(
     types?: string[]
-  ): Promise<any> {
+  ): Promise<RawTxnData | null> {
     let txs = await prisma.transactionQueue.findMany({
       where: { AND: [
         { queue: this._queue },
-        { state: {in: [WAITING, REVISION]} }, 
+        { state: {in: [WAITING]} }, 
       ]},
       orderBy: { sequence: 'asc'      }
     })
@@ -126,6 +129,34 @@ class TransactionsQueue {
     }
   }
 
+
+  /**
+   * Retrieves the first running transaction from the given Queue.
+   * The transaction mut be in the REVISION or RETRY state, and only 
+   * one runnnig transaction is allowed per queue.
+   * @returns Null if no running transaction in the queue
+   */
+  async getRunningTransaction(
+    types?: string[]
+  ): Promise<RawTxnData | null> {
+    let txs = await prisma.transactionQueue.findMany({
+      where: { AND: [
+        { queue: this._queue },
+        { state: {in: [REVISION, RETRY, WAITING]} }, 
+      ]},
+      orderBy: { sequence: 'asc'      }
+    })
+
+    let tx = txs.length ? txs[0] : null ; // just return the firt or Null 
+    if (!tx) return null;
+    return {
+      uid: tx.uid,
+      type: tx.type,
+      state: tx.state,
+      hash: tx.hash,
+      data: JSON.parse(tx.data || "{}")
+    }
+  }
 
   /**
    * Updates a given transaction using the state, result and optional params. 
@@ -167,21 +198,11 @@ class TransactionsQueue {
   async retryTransaction(uid: string): Promise<any> {
     let txu = await prisma.transactionQueue.update({
       where: { uid: uid },
-      data: { retries: {increment: 1}, state: WAITING },
+      data: { retries: {increment: 1}, state: RETRY },
     })
     log.retryPending(txu);
     return txu;
   }
-
-  async getTransactionRetries(
-    uid: string
-  ): Promise<number> {
-    let txr = await prisma.transactionQueue.findUnique({
-      where: { uid: uid} 
-    })
-    return txr?.retries || 0;
-  }
-
 
   /**
    * Closes a given transaction so it will never be processed again. 
@@ -246,11 +267,11 @@ class TransactionsQueue {
   static async getActiveQueues(): Promise<any> {
     let queues = await prisma.transactionQueue.findMany({
       where: { AND: [
-        { state: {in: [WAITING, REVISION]} }, 
-        { retries: {lt: MAX_RETRIES} }
+        { state: {in: [WAITING, REVISION, RETRY]} }, 
+        // { retries: {lt: MAX_RETRIES} }
       ]},
       distinct: ['queue'],
-      orderBy: { sequence: 'asc'      }
+      orderBy: { state: 'asc' }
     })
     
     return queues || [];

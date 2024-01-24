@@ -22,76 +22,145 @@ Currently we are processing the following types:
 
 - CREATE_CLAIM_VOTING_ACCOUNT
 - SEND_CLAIM_VOTE
-- ROLLUP_CLAIM_VOTES
-
 - CREATE_VOTING_BATCHES_ACCOUNT
-
 - RECEIVE_VOTES_BATCH
-
 - COMMIT_ALL_VOTING_BATCHES
 
 Note that for each type we need to implement a new class derived from the abstract `AnyDispatcher` class. 
 
-##### A run cycle
+### A Sequencer run cycle
 
-The Sequencer will process the transactions in the order in which were received (FIFO). A cycle of the Sequencer does:
+The Sequencer will process the transactions in the order in which they were received (FIFO). 
 
-~~~
-1. Get all queues that have WAITING or REVISION transactions of the allowed types
+A cycle of the Sequencer does:
+
+1. Get all "active" queues: this are the queues that have transactions in the WAITING, REVISION or RETRY state.
 
 2. For each active queue:
 
-  2.1. Check if we have a running transaction on it. If we have, we just pass.
+    - Check if we have a running transaction on it (queue has a blockedSender). If we have:
 
-  2.2. If we have no running transactions:
-
-    2.2.1. Retrieve the first one from the Queue (FIFO).
-
-    2.2.2. According to the transaction state:
-    
-      - WAITING: Dispatch the pending transaction.
-
-        - If proved and sent, mark it for REVISION.
-        - If failed, retry it or mark as FAILED
-       
-      - REVISION: Wait till included in block
-
-        - If finished, mark it as DONE.
-        - If failed, retry it or mark as FAILED
+        ~~~
+        If Txn is in REVISION state and queue is in WAITING_INCLUSION state
+        	continue
+            
+        If Txn is in REVISION state and queue is in INCLUSION state
+          change queue state to WAITING_INCLUSION
+          we start WaitForInclusion
+          when WaitForInclusion has finished 
+          	change Txn state to either DONE or RETRY
+           	if DONE 
+             	change queue state to FREE
+           	if RETRY
+             	change queue state to RETRY   
+           	continue
         
-~~~
+        If Txn is in RETRY state and queue is already in DELAY state
+          continue
+        
+        If Txn is in RETRY state but queue already reached MAX_RETRIES
+          change Txn state to FAILED
+          change queue state to FREE
+          continue
+        
+        If Txn is in RETRY state and queue is in RETRY state
+          change queue state to DELAY
+          we start WaitForRetry
+          when WaitForRetry has finished
+            dispatch Txn
+            if dispatcher return Success
+              change Txn state to REVISION
+              change queue state to INCLUSION
+              continue
+            if dispatcher returns Error
+              change Txn state to RETRY
+              change queue state to RETRY
+              continue
+             
+        ~~~
+    
+    - We have no running transactions on this Queue:
+    
+        ~~~     
+        Retrieve the first one in WAITING state from the Queue (FIFO)
+        
+        If all senders are taken (no sender available)
+         // we need to continue till we can get an available sender
+         continue
+        
+        If we have an available sender
+         dispatch Txn
+         if dispatcher return Success
+           change Txn state to REVISION
+           change queue state to INCLUSION
+           continue
+         if dispatcher returns Error
+           change Txn state to RETRY
+           change queue state to RETRY
+           continue
+           
+        ~~~
 
-##### Transaction states
+#### Transaction states
 
 A transaction in the queue may be in one of several states:
 
 - `WAITING`: indicates a Txn that is waiting to be processed by the Sequencer, or has failed and needs to be retried (retries > 0).
 - `REVISION`: indicates a Txn that has been submitted but is waiting to be included in a block. This is needed for transactions that have been successfully sent and are waiting to be finished, but the Sequencer was stopped for any reason, and so we have "hanging" transactions that may have been completed but were not marked as either DONE or FAILED.
+- `RETRY`: indicates a Txn that has failed before but that will be retried with some delay and changing the fee.
 - `DONE`: indicates a Txn that has been finished. 
 - `FAILED`: indicates a Txn that has failed after many retries, and will not be processed anymore.
 
+#### Transaction queue
+
+All tasks posted to the Sequencer are added to the TransactionQueues list (table), setting a WAITING state on it, and a queue name in which we want to add the task.
+
+A given queue in this list can contain many transactions in different states, but:
+
+- Only one (1) transaction in the queue can be in the RETRY or REVISION state.
+- All other transactions may be in  the WAITING, DONE or FAILED state.
+
+While a Queue is busy it is binded to a given Sender (and worker) which is the one who dispatched and signed the Txn. 
+
+When the Txn is finished (either DONE or FAILED) the Queue releases the Sender which can then be used to dispatch another transaction for this or another Queue.
+
+### Senders and workers
+
+A Sender is a given MINA account (with a public and a secret key) which will be used to sign and  dispatch transactions.
+
+Associated to each Sender we launch a remote cloud Worker (a Dispatcher) that will receive the task send to it, process it and dispatch the needed transaction to MINA. 
+
+When we start the Sequencer, we add a list of the available Senders (and its associated Worker) that the Sequencer will have available to do his work.
+
+The Sequencer can then send a pending task in a given queue to one of this Senders, and the Sender will be blocked by this queue until the transaction started by the task is completed (either DONE or FAILED).
+
+A Sender (and its associated Worker) can be in any of the following states:
+
+- `FREE` The sender is free to dispatch transactions and can be binded to any queue.
+- `BLOCKED` The sender has been blocked by a given queue which will keep it blocked until it finishes.
+- `INCLUSION` The queue has dispatched a transaction with success, and we now need to wait for it to be included in a block, but we have not yet started the "waiting for inclusion" process.
+- `WAITING_INCLUSION` We have already started the waiting process, which will query the state of the pending transaction in MINA every N seconds, until it finishes. 
+- `RETRY` The queue has dispatched a transaction an received back an error, and so we will need retry it, but we have not yet started the "waiting for retry" process.
+- `DELAY` We have already started the waiting process, and will delay for N secs before retrying dispatching the task.
+
+**Worker dispatch call**
+
+The Sequencer will send the Worker the following data when dispatching the task:
+
+- `RawTxnData` The "raw" transaction data: _{ uid: string, type: string, data: object }_.  
+
+- `Sender` The Sender binded to this worker: _{ accountId: string, queue: string, retries: number }_
+
+The Worker will respond with:
+
+- `TxnResult`  A "baton" object used to pass the results of the dispatch and other methods between invocations: _{ hash: string,
+   done: object | null,
+  error: object | null }_ 
 
 
-#### Transaction queues
+**Worker methods**
 
-
-
-Types
-
-- `RawTxnData`: the "raw" transaction data, mainly 'uid', type', and 'data' (where data is an open plain object). 
-
-- `TxnResult`: is a "baton" object used to pass the results of the dispatch, waiting and other methods between invocations.
-
-Methods
-
-
-
-#### Dispatchers
-
-Methods
-
-- `dispatch(txnData: RawTxnData)`
-- `onFinished(txnData: RawTxnData, result: TxnResult)`
-
-#### Transaction events
+- `dispatch(txnData: RawTxnData, sender: Sender): TxnResult`
+- `onSuccess(txnData: RawTxnData, result: TxnResult, sender: Sender): TxnResult`
+- `onFailure(txnData: RawTxnData, result: TxnResult, sender: Sender): TxnResult`
 

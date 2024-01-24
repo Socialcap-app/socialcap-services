@@ -31,7 +31,7 @@ setupSequencer({
     { 
       accountId: SENDER_ID, 
       secretKey: SENDER_KEY, 
-      workerUrl: "http://localhost:3083" 
+      workerUrl: "http://localhost:3082" 
     },
   ]
 })

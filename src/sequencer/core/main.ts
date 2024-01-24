@@ -9,7 +9,7 @@ const INTERVAL = 5000; // every 5 secs
 
 export function setupSequencer(params: {
   dispatchers: any[],
-  workers: Sender[]
+  workers: any[]
 }) {
   log.info("Run Sequencer over Mina.Berkeley");
   const 
@@ -39,8 +39,10 @@ export function setupSequencer(params: {
 
 
 export async function runSequencer() {
-  // run it ...
+  // restore state
   let activeQueuesNames = await Sequencer.refreshQueues();
+
+  // run first 
   await Sequencer.run();
   log.running(activeQueuesNames);
 
@@ -56,6 +58,7 @@ export function startSequencer() {
   // start the Db storage
   console.log("\n");
   merkleStorage.startup();
+  SendersPool.restorePoolState();
   
   // we need the Db to be ready before we can do anything
   // so we make it wait for INTERVAL secs before running
