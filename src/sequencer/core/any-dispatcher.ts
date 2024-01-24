@@ -14,8 +14,11 @@ import {
   TRY_SEND_TRANSACTION_EXCEPTION,
   TRY_WAITING_TRANSACTION_EXCEPTION,
   POST_TRANSACTION_EVENT_FAILED,
-  hasException, 
+  hasException,
+  PREPARE_TRANSACTION_FAILED,
+  PROVING_TRANSACTION_FAILED, 
 } from "./error-codes.js";
+import { Transaction } from 'lmdb';
 
 export { AnyDispatcher };
 
@@ -23,16 +26,11 @@ let nonce = 0;
 
 
 abstract class AnyDispatcher {
-
-  abstract name(): string;
-
-  /**
-   * Checks if the dispatcher action can be retried again. 
-   * it can return 0 if no retries are allowed, otherwise 
-   * must return the max number of allowed retries.
+  /** 
+   * The derived class Dispatcher name
    */
-  abstract maxRetries(): number;
-
+  abstract name(): string;
+  
   /**
    * This must be implemented by derived classes and will be called 
    * by the Sequencer.dispatch method to send a new transaction to Mina.
@@ -70,42 +68,53 @@ abstract class AnyDispatcher {
     fee: number,
     signKeys: PrivateKey[]
   ): Promise<TxnResult> {
+    let txn: Mina.Transaction | null = null;
+
+    // lets prepare it ...
     try {
-      let txn = await Mina.transaction(
+      txn = await Mina.transaction(
         { sender:payerPubkey, fee: fee }, 
         transactionFn
       );
-      await txn.prove();
-
-      let pendingTxn = signKeys.length 
-        ? await txn.sign(signKeys).send()
-        : await txn.send();
-        
-      if (! pendingTxn.isSuccess) {
-        return {
-          hash: "",
-          done: {},
-          error: hasException(TRY_SEND_TRANSACTION_EXCEPTION, pendingTxn)
-        };
-      }
-      
-      log.pendingTxn(pendingTxn) ;
-      
-      // we return ths submitted transaction in TxnResult format 
+    }
+    catch (err) {
+      log.error("AnyDispatcher proveAndSend ERR="+err);
       return {
-        hash: pendingTxn.hash() as string,
-        done: {}, // we are not done yet ...
+        error: hasException(PREPARE_TRANSACTION_FAILED, err),
+        hash: "", done: {},
+      }
+    } 
+
+    try {
+      await txn!.prove();
+    }
+    catch (err) {
+      log.error("AnyDispatcher proveAndSend ERR="+err);
+      return {
+        error: hasException(PROVING_TRANSACTION_FAILED, err),
+        hash: "", done: {},
+      }
+    }
+
+    let pendingTxn = signKeys.length 
+      ? await txn.sign(signKeys).send()
+      : await txn.send();
+        
+    if (! pendingTxn.isSuccess) {
+      return {
+        error: hasException(TRY_SEND_TRANSACTION_EXCEPTION, pendingTxn),
+        hash: "", done: {}
       };
     }
-    catch (err: any) {
-      console.log("proveAndSend", err);
-      return {
-        hash: "",
-        done: {},
-        error: hasException(TRY_SEND_TRANSACTION_EXCEPTION, err)
-      }
-    }
+    
+    // we return ths submitted transaction in TxnResult format 
+    log.info(`AnyDispatcher proveAndSend pendingTxn=${pendingTxn.hash()}`) ;
+    return {
+      hash: pendingTxn.hash() as string,
+      done: {}, // we are not done yet ...
+    };
   }
+
 
   /**
    * Waits that the already dispatched transaction is included in a block.
@@ -128,22 +137,24 @@ abstract class AnyDispatcher {
     }
   }
 
-  /**
-   * Post and event to the TransactioEvents queue. It receives the TxnResult
-   * and modifies it accordingly if the call fails. It is mostly a helper
-   * function for being called by derived classes.
-   */
-  async postEvent(
-    ev: TxnEvent,
-    result: TxnResult
-  ): Promise<TxnResult> {
-    let updated = await postTxnEvent(ev);
-    
-    if (! updated) {
-      result.error = hasException(POST_TRANSACTION_EVENT_FAILED);
-      log.error(result.error);
-    }
 
-    return result;
-  }
+  // NOT IN USE NOW (FUTURE ?)
+  //   /**
+  //    * Post and event to the TransactioEvents queue. It receives the TxnResult
+  //    * and modifies it accordingly if the call fails. It is mostly a helper
+  //    * function for being called by derived classes.
+  //    */
+  //   async postEvent(
+  //     ev: TxnEvent,
+  //     result: TxnResult
+  //   ): Promise<TxnResult> {
+  //     let updated = await postTxnEvent(ev);
+  //     
+  //     if (! updated) {
+  //       result.error = hasException(POST_TRANSACTION_EVENT_FAILED);
+  //       log.error(result.error);
+  //     }
+  // 
+  //     return result;
+  //   }
 }

@@ -11,10 +11,15 @@ import { SequencerLogger as log } from "./logs.js";
 import { Sender } from "./senders-pool.js";
 
 import { 
+  WORKER_ERROR,
+  WORKER_UNAVAILABLE,
+  PREPARE_TRANSACTION_FAILED,
+  PROVING_TRANSACTION_FAILED,
   TRY_SEND_TRANSACTION_EXCEPTION,
   TRY_WAITING_TRANSACTION_EXCEPTION,
   POST_TRANSACTION_EVENT_FAILED,
-  hasException, 
+  hasException,
+  UNRESOLVED_ERROR, 
 } from "./error-codes.js";
 
 export { DispatcherProxy };
@@ -45,10 +50,11 @@ class DispatcherProxy {
   async dispatch(
     txData: RawTxnData,
     sender: Sender,
-  ): Promise<any> {
+  ): Promise<TxnResult> {
+    sender.secretKey = "";
     return await this.POST(`${sender.workerUrl}/dispatch`, {
       txData: txData, 
-      sender: sender.accountId
+      sender: sender
     });
   }
 
@@ -62,9 +68,11 @@ class DispatcherProxy {
     result: TxnResult,
     sender: Sender,
   ): Promise<TxnResult> {
+    sender.secretKey = "";
     return await this.POST(`${sender.workerUrl}/on-success`, {
       txData: txData, 
-      sender: sender.accountId
+      result: result,
+      sender: sender
     });
   }
 
@@ -73,9 +81,11 @@ class DispatcherProxy {
     result: TxnResult,
     sender: Sender,
   ): Promise<TxnResult> {
+    sender.secretKey = "";
     return await this.POST(`${sender.workerUrl}/on-failure`, {
       txData: txData, 
-      sender: sender.accountId
+      result: result,
+      sender: sender
     });
   }
 
@@ -85,18 +95,19 @@ class DispatcherProxy {
    * @catches exception and sends as a TxnResult (with error) format if failed
    */
    async waitForInclusion(
-    txnHash: string
-  ): Promise<TxnResult> {
+    txnHash: string,
+    callback: (result: TxnResult) => void
+  ) {
     try {
       let result = await waitForTransaction(txnHash);
-      return result;
+      if (callback) callback(result);
     }
     catch (err: any) {
-      return {
+      if (callback) callback({
         hash: "",
         done: {},
         error: hasException(TRY_WAITING_TRANSACTION_EXCEPTION, err)
-      }
+      });
     }
   }
 
@@ -136,8 +147,16 @@ class DispatcherProxy {
       return {
         hash: "",
         data: {},
-        error: err
+        error: resumedAxiosError(err)
       };
     }
   }
+}
+
+
+function resumedAxiosError(err: any) {
+  if (err.response?.data) 
+    return hasException(PREPARE_TRANSACTION_FAILED, err.response.data);
+  if (!err.response) 
+    return  hasException(WORKER_UNAVAILABLE, { code: err.code, message: err.message })
 }

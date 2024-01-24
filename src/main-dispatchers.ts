@@ -1,4 +1,5 @@
 // import Fastify from 'fastify';
+import 'dotenv/config';
 import { Mina } from "o1js";
 import { fastify, logger, merkleStorage } from "./global.js";
 import fastifyJwt from "@fastify/jwt";

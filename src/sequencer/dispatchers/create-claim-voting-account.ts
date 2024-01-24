@@ -2,8 +2,10 @@ import { Mina, AccountUpdate, PrivateKey, PublicKey, Field } from "o1js";
 import { ClaimVotingContract } from "@socialcap/claim-voting";
 import { UID } from "@socialcap/contracts-lib";
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
+import { AnyPayer, findPayer } from "./payers.js";
 import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
 import { updateClaimAccountId } from "../../dbs/claim-helpers.js";
+import { hasException, NO_FEE_PAYER_AVAILABLE } from "../core/error-codes.js";
 
 export { CreateClaimVotingAccountDispatcher };
 
@@ -33,24 +35,32 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
    */
   async dispatch(txnData: RawTxnData, sender: Sender) {
     // this data was send by postTransaction
+    log.info(`Start dispatching task ${JSON.stringify(txnData)}`);
     const { claimUid, strategy } = txnData.data;
-    
-    console.log("Sender ", sender.accountId);
+
+    // find the Payer secret keys using the sender addresss
+    const payer = findPayer(sender.accountId);
+    if (!payer) return {
+      data: {}, hash: "",
+      error: hasException(NO_FEE_PAYER_AVAILABLE, { accountId: sender.accountId })
+    }
+
     const deployer = {
       address: sender.accountId,
-      publicKey: PublicKey.fromBase58(sender.accountId),
-      privateKey: PrivateKey.fromBase58(sender.secretKey)
+      publicKey: payer.publicKey,
+      privateKey: payer.privateKey
     };
 
     // we ALWAYS compile it
     await ClaimVotingContract.compile();
+    log.info(`Done compiling ClaimVotingContract`);
 
     // we need to generate a new key pair for each deploy
     const zkappPrivkey = PrivateKey.random();
     const zkappPubkey = zkappPrivkey.toPublicKey();
 
     let zkApp = new ClaimVotingContract(zkappPubkey);
-    log.zkAppInstance(zkappPubkey.toBase58());
+    log.info(`Created ClaimVotingContract zkApp=${zkappPubkey.toBase58()}`);
       
     let fuid = UID.toField(claimUid);
     let frv = Field(strategy.requiredVotes);
@@ -70,6 +80,7 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
       deployer.publicKey, DEPLOY_TX_FEE,   // feePayer and fee
       [deployer.privateKey, zkappPrivkey]  // sign keys
     );
+    log.info(`Done proveAndSend result=${JSON.stringify(result)}`);
 
     if (result.error) return result;
 
@@ -89,7 +100,7 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
   ): Promise<TxnResult> {
     // if we are really finished , we need to update the associated accountId
     const { claimUid, accountId } = txnData.data;
-    await updateClaimAccountId(claimUid, { accountId: accountId });
+    // await updateClaimAccountId(claimUid, { accountId: accountId });
     return result;
   }
   

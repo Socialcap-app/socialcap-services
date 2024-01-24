@@ -5,6 +5,7 @@
  */
 import { TxnEvent } from "./transaction-events.js";
 import { IError } from "./error-codes.js";
+import { TxnResult } from "./transaction-queues.js";
 
 export class SequencerLogger {
 
@@ -72,6 +73,13 @@ export class SequencerLogger {
 
   static info(msg: any) {
     console.log(`${dts()}: INFO `, msg);
+  }
+
+  static result(msg: any, result: TxnResult) {
+    if (result.error)
+      console.log(`${dts()}: ERROR ${msg} error=${JSON.stringify(result.error)}`);
+    else
+      console.log(`${dts()}: INFO  ${msg} result=${JSON.stringify(result)}`);
   }
 } 
 

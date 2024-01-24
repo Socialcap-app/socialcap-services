@@ -11,7 +11,7 @@ const SENDER_ID = process.env.SENDER_ID as string;
 const DEPLOYER_KEY = process.env.DEPLOYER_KEY as string;
 const DEPLOYER_ID = process.env.DEPLOYER_ID as string;
 
-export { Payers, AnyPayer };
+export { AnyPayer, findPayer };
 
 interface AnyPayer {
   address: string;
@@ -19,6 +19,7 @@ interface AnyPayer {
   privateKey: PrivateKey;
 }
 
+// build the Payers list from the Environment settings
 const Payers: any = {
   'DEPLOYER': {
     address: DEPLOYER_ID,
@@ -31,4 +32,15 @@ const Payers: any = {
     publicKey: PublicKey.fromBase58(SENDER_ID),
     privateKey: PrivateKey.fromBase58(SENDER_KEY)
   }
+}
+
+
+function findPayer(address: string): AnyPayer | null {
+  let keys = Object.keys(Payers) || [];
+  for (let j=0; j < keys.length; j++) {
+    let payer = Payers[keys[j]];
+    if (payer.address === address)
+      return payer;
+  }
+  return null;
 }
