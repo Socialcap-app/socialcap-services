@@ -9,9 +9,10 @@ node_modules
 # testing
 /coverage
 
-# database
+# databases and stores
 /prisma/db.sqlite
 /prisma/db.sqlite-journal
+kvstores
 
 # Never commit keys to Git!
 keys
