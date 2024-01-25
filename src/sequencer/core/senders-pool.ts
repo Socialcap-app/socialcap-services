@@ -163,9 +163,10 @@ class SendersPool {
 
     storedSenders.forEach((sender) => {
       if (SendersPool.findSender(sender.accountId)) {
-        // need to force waiting again, since we are bootstraping from
-        // previous state, and waiting need to be restarted for the queue
+        // need to force waiting and retrying again, since we are bootstraping from
+        // previous state, and it needs to be restarted for the queue
         sender.state = sender.state === WAITING_INCLUSION ? MUST_INCLUDE : sender.state;
+        sender.state = sender.state === RETRYING ? MUST_RETRY : sender.state;
 
         // it already exists in the pool, must update the pool
         this.updateSender(sender);
