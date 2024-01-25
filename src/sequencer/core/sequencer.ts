@@ -119,9 +119,7 @@ class Sequencer {
     // coding problem or bad configuartion) and we can do nothing 
     if (result.error?.code === UNRESOLVED_ERROR) {
       log.error(result.error);
-      let unresolvedTxn = await queue.closeUnresolvedTransaction(txn.uid, {
-        result: result
-      })
+      let unresolvedTxn = await queue.closeUnresolvedTransaction(txn.uid, result);
       SendersPool.freeSender(queue.name());
       return;
     }
@@ -136,9 +134,7 @@ class Sequencer {
 
     // we got to REVISION and have to wait to be included in block 
     log.info(`Sequencer.dispatch pending txn=${result.hash}`);
-    let revisionTx = await queue.closeRevisionTransaction(txn.uid, {
-      result: result
-    })
+    let revisionTx = await queue.closeRevisionTransaction(txn.uid, result)
     SendersPool.changeSenderState(queue.name(), MUST_INCLUDE);
     return;        
   }
@@ -177,9 +173,7 @@ class Sequencer {
         // check if we have FULLY FAILED 
         if (result?.error && sender.retries >= MAX_RETRIES) {
           // we dont have any retries left !
-          let failedTxn = await queue.closeFailedTransaction(txn.uid, { 
-            result:result
-          });
+          let failedTxn = await queue.closeFailedTransaction(txn.uid, result);
           failedTxn.data = JSON.parse(failedTxn.data);
           await dispatcher.onFailure({
               uid: failedTxn.uid,
@@ -192,9 +186,7 @@ class Sequencer {
         }
 
         // we are DONE !
-        let doneTxn = await queue.closeSuccessTransaction(txn.uid, {
-          result:result
-        });
+        let doneTxn = await queue.closeSuccessTransaction(txn.uid, result);
         await dispatcher.onSuccess({
             uid: doneTxn.uid,
             type: doneTxn.type,

@@ -217,10 +217,10 @@ class TransactionsQueue {
    * @returns the updated Transaction
    */
 
-  async closeUnresolvedTransaction(uid: string, params: {
+  async closeUnresolvedTransaction(
+    uid: string, 
     result: TxnResult
-  }): Promise<any> {
-    let { result } = params;
+): Promise<any> {
     return await this.updateTransaction(uid, {
       state: UNRESOLVED, 
       result: result,
@@ -228,10 +228,10 @@ class TransactionsQueue {
     });
   }
 
-  async closeFailedTransaction(uid: string, params: {
+  async closeFailedTransaction(
+    uid: string, 
     result: TxnResult
-  }): Promise<any> {
-    let { result } = params;
+  ): Promise<any> {
     return await this.updateTransaction(uid, {
       state: FAILED, 
       result: result,
@@ -239,10 +239,10 @@ class TransactionsQueue {
     });
   }
 
-  async closeSuccessTransaction(uid: string, params: {
+  async closeSuccessTransaction(
+    uid: string,
     result: TxnResult
-  }): Promise<any> {
-    let { result } = params;
+  ): Promise<any> {
     return await this.updateTransaction(uid, {
       state: DONE, 
       result: result,
@@ -250,10 +250,10 @@ class TransactionsQueue {
     });
   }
 
-  async closeRevisionTransaction(uid: string, params: {
+  async closeRevisionTransaction(
+    uid: string,
     result: TxnResult
-  }): Promise<any> {
-    let { result } = params;
+  ): Promise<any> {
     return await this.updateTransaction(uid, {
       state: REVISION, 
       result: result
