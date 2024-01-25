@@ -77,12 +77,9 @@ $ ./run/restore-testdb.sh L0
 ./run-dispatchers.sh
 ~~~
 
-
-
-
-**2. Run the tests: Submit claims for each user**
+**3. Run the tests: Submit claims for each user**
 ~~~
-node build/src/tests/run-submit-claims.ts
+node build/src/tests/run-submit-claims.js
 ~~~
 
 **3. Dump the prepared Db to testdb-L1** 

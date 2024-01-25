@@ -90,3 +90,8 @@ export function checkTransaction(pendingTx: any) {
 }
 
 
+export async function delay(n: number) {
+    // wait for X seconds before next one ...
+    console.log(`Waiting ${n} seconds`);
+    await new Promise((resolve) => setTimeout(resolve, n));
+}

@@ -5,8 +5,8 @@ import { changeAssignedTasksStateByPlan } from "../dbs/task-helpers.js";
 import { changeMasterPlanState, getMasterPlan } from "../dbs/plan-helpers.js";
 import { Sequencer } from "../sequencer/core/index.js";
 
-export {
-}
+export { closeVoting }
+
 
 /**
  * Closes the voting process, and does not allow any more batches.

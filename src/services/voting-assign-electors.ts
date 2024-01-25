@@ -3,7 +3,6 @@ import { UID, ASSIGNED, VOTING, CLAIMED, UTCDateTime } from "@socialcap/contract
 import { ClaimElectorNullifier, ClaimElectorNullifierLeaf } from "@socialcap/claim-voting";
 import { logger, prisma } from "../global.js";
 import { updateEntity } from "../dbs/any-entity-helpers.js";
-import { CommunityMembers } from "../dbs/members-helper.js";
 import { getValidators, getAuditors } from "../dbs/members-helpers.js";
 import { getMasterPlan } from "../dbs/plan-helpers.js";
 import { getClaimsByPlan } from "../dbs/claim-helpers.js";

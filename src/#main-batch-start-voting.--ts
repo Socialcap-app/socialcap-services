@@ -4,7 +4,7 @@ import { CLAIMED } from "@socialcap/contracts";
 import { OffchainMerkleStorage } from "./dbs/offchain-merkle-storage.js";
 import { OffchainMerkleMap } from "./dbs/offchain-merkle-map.js";
 import { startClaimVotingProcess } from "./services/voting-process-votes.js";
-import { CommunityMembers } from "./dbs/members-helper.js";
+import { CommunityMembers } from "./dbs/members-helpers.js";
 import { getCommunityClaims, findCommunityByName } from "./dbs/community-helpers.js";
 
 const COMMUNITY_NAME = 'MINA Navigators Community';
