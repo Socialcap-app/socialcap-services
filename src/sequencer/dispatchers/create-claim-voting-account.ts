@@ -18,38 +18,27 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
     return CreateClaimVotingAccountDispatcher.uname 
   };
  
-  maxRetries(): number {
-    return 3;
-  }
-
   /**
    * Creates a new zkApp using the ClaimVotingContract. Each claim has 
    * its own zkApp account created just for doing the voting on it.
    *
    * @param txnData: 
-   *  account: { id, publickKey, privateKey } keys of the account to create
    *  claimUid: the Uid of the Claim binded to this account
    *  strategy: {requiredVotes,requiredPositives...} params for voting
-   * @returns result of successfull transaction
-   * @throws exception on failure, will be handled by Sequencer.dispatcher
+   * @param sender: the sender binded to this worker
+   * @returns result of successfull transaction or error result
    */
   async dispatch(txnData: RawTxnData, sender: Sender) {
     // this data was send by postTransaction
     log.info(`Start dispatching task ${JSON.stringify(txnData)}`);
     const { claimUid, strategy } = txnData.data;
 
-    // find the Payer secret keys using the sender addresss
-    const payer = findPayer(sender.accountId);
-    if (!payer) return {
+    // find the Deployer secret keys using the sender addresss
+    const deployer = findPayer(sender.accountId);
+    if (!deployer) return {
       data: {}, hash: "",
       error: hasException(NO_FEE_PAYER_AVAILABLE, { accountId: sender.accountId })
     }
-
-    const deployer = {
-      address: sender.accountId,
-      publicKey: payer.publicKey,
-      privateKey: payer.privateKey
-    };
 
     // we ALWAYS compile it
     await ClaimVotingContract.compile();
@@ -87,20 +76,19 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
     result.data = {
       claimUid: claimUid,
       strategy: strategy,
-      accountId: zkappPubkey.toBase58(), 
-      // privateKey: zkappPrivkey.toBase58()
+      claimAddress: zkappPubkey.toBase58(), 
     }
     return result;
   }
-
 
   async onSuccess(
     txnData: RawTxnData, 
     result: TxnResult
   ): Promise<TxnResult> {
     // if we are really finished , we need to update the associated accountId
-    const { claimUid, accountId } = txnData.data;
-    // await updateClaimAccountId(claimUid, { accountId: accountId });
+    console.log("onSucess txnData=", txnData, " result=", result)
+    const { claimUid, claimAddress } = txnData.data;
+    await updateClaimAccountId(claimUid, { accountId: claimAddress });
     return result;
   }
   
@@ -109,7 +97,7 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
     result: TxnResult
   ): Promise<TxnResult> {
     // if failed, we set the accountId to empty string to mark it as unusable
-    const { claimUid, accountId } = txnData.data;
+    const { claimUid, claimAddress } = txnData.data;
     await updateClaimAccountId(claimUid, { accountId: "" });
     return result;
   }

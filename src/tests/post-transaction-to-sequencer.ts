@@ -22,7 +22,7 @@ setTimeout(async () => {
   console.log("Posted txn=", txn);
 }, 1000)
 
-
+/*
 setTimeout(async () => {
   let uid = ruid();
   let txn = await Sequencer.postTransaction(qname(uid), {
@@ -52,3 +52,4 @@ setTimeout(async () => {
   })
   console.log("Posted txn=", txn);
 }, 1000)
+*/

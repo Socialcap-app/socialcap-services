@@ -180,7 +180,13 @@ class Sequencer {
           let failedTxn = await queue.closeFailedTransaction(txn.uid, { 
             result:result
           });
-          await dispatcher.onFailure(failedTxn, result, sender);
+          failedTxn.data = JSON.parse(failedTxn.data);
+          await dispatcher.onFailure({
+              uid: failedTxn.uid,
+              type: failedTxn.type,
+              data: JSON.parse(failedTxn.data)
+            }, result, sender
+          );
           SendersPool.freeSender(queue.name());
           return;
         }
@@ -189,7 +195,12 @@ class Sequencer {
         let doneTxn = await queue.closeSuccessTransaction(txn.uid, {
           result:result
         });
-        await dispatcher.onSuccess(doneTxn, result, sender);
+        await dispatcher.onSuccess({
+            uid: doneTxn.uid,
+            type: doneTxn.type,
+            data: JSON.parse(doneTxn.data)
+          }, result, sender
+        );
         SendersPool.freeSender(queue.name());
         return;
       }); 
