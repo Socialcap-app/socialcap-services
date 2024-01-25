@@ -4,6 +4,8 @@ import { fastify, prisma, logger } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { waitForTransaction } from "../services/mina-transactions.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
+import { getMasterPlan } from "../dbs/plan-helpers.js";
+import { Sequencer } from "../sequencer/core/index.js";
 //import { startClaimVotingProcess } from "../services/voting-process-votes.js";
 
 type Claimable = {
@@ -203,24 +205,33 @@ export async function submitClaim(params: {
   const claim = params.claim;
   const uid = claim.uid;
   let {transaction, waitForPayment, addToQueue} = params.extras ;
-
+  
   let rs: any;
   claim.evidenceData = JSON.stringify(claim.evidenceData || "[]");
   claim.state = parseInt(claim.state || 1);
 
+  let plan = await getMasterPlan(claim.planUid);
+  let strategy = plan?.strategy ? JSON.parse(plan?.strategy) : {};
+
   // check if we need to add it to the ClaimsQueue for latter processing
+  let txn: any = null;
   if (addToQueue) {
     // we dont need to wait for payment, so we mark it as CLAIMED right now
     // the voting process will be started latter
     claim.state = CLAIMED; 
     rs = await updateEntity("claim", uid, claim);
-    /*
-    let txn = Sequencer.postTransaction(`claim-${uid}`, {
+
+    // dispatch to MINA
+    txn = await Sequencer.postTransaction(`claim-${uid}`, {
       type: 'CREATE_CLAIM_VOTING_ACCOUNT',
-      claimUid: uid,
-      strategy: plan.strathegy
+      data: {
+        claimUid: uid,
+        strategy: {
+          requiredPositives: strategy.minPositives,
+          requiredVotes: strategy.minVotes
+        }
+      }
     })
-    */
   }
 
   // check if we need to wait for Payment
@@ -229,27 +240,30 @@ export async function submitClaim(params: {
     claim.state = WAITING; // waiting before not yet paid ...
     rs = await updateEntity("claim", uid, claim);
 
-    waitForTransaction(
-      transaction.hash, 
-      params, 
-      async (params: any) => {
-        params.state = CLAIMED;
-        await updateEntity("claim", params.uid, params);
-        console.log("Succcess. Must start the voting process.");
-
-        // we dont await for it, we just let it start whenever it can
-        // startClaimVotingProcess(params);
-      }, 
-      async (params: any, err: any) => {
-        logger.error(err);
-        params.state = UNPAID; // Payment failed, must repay and resend
-        await updateEntity("claim", params.uid, params);
-      }
-    );
+      //     waitForTransaction(
+      //       transaction.hash, 
+      //       params, 
+      //       async (params: any) => {
+      //         params.state = CLAIMED;
+      //         await updateEntity("claim", params.uid, params);
+      //         console.log("Succcess. Must start the voting process.");
+      // 
+      //         // we dont await for it, we just let it start whenever it can
+      //         // startClaimVotingProcess(params);
+      //       }, 
+      //       async (params: any, err: any) => {
+      //         logger.error(err);
+      //         params.state = UNPAID; // Payment failed, must repay and resend
+      //         await updateEntity("claim", params.uid, params);
+      //       }
+      //  );
   }
 
   return hasResult({
     claim: rs.proved,
-    transaction: rs.transaction
+    transaction: { 
+      uid: txn?.uid || '',
+      type: txn.type || "UNKNOWN" 
+    }
   }); 
 }

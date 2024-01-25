@@ -1,5 +1,5 @@
 import { prisma } from "../global.js";
-import { CommunityMembers } from "./members-helper.js";
+import { CommunityMembers } from "./members-helpers.js";
 import { DRAFT, CLAIMED, IGNORED, VOTING, UNPAID, REJECTED, APPROVED } from "@socialcap/contracts";
 
 

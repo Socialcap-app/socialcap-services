@@ -7,7 +7,7 @@ import { hasError, hasResult, raiseError } from "../responses.js";
 import { waitForTransaction } from "../services/mina-transactions.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 import { saveJSON } from "../dbs/nullifier-helpers.js";
-import { CommunityMembers } from "../dbs/members-helper.js";
+import { CommunityMembers } from "../dbs/members-helpers.js";
 import { createVotesBatch } from "../dbs/batch-helpers.js";
 import { Sequencer } from "../sequencer/core/index.js";
 

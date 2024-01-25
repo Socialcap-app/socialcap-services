@@ -37,16 +37,19 @@ export async function getClaimsByPlan(planUid: string, params: {
   states: number[]
 }) {
   const claims = await prisma.claim.findMany({
-    where: { planUid: planUid },
-    orderBy: { createdUTC: 'asc' }
+    where: { AND: [
+      { planUid: { equals: planUid }},
+      { state: { in: params.states || [] }}
+    ]},
+    orderBy: { createdUTC: 'desc' }
   })
-  if (! params.states) 
-    return claims || [];
+  return claims || [];
 
-  let filtered = (claims || []).filter((claim) => {
-    return ((params.states || []).includes(claim.state))
-  })
-  return filtered || [];
+  // let filtered = (claims || []).filter((claim) => {
+  //   console.log("included? ", params.states, claim.state, params.states.includes(claim.state as number) )
+  //   return (params.states.includes(claim.state))
+  // })
+  // return filtered || [];
 }
 
 export async function updateClaimVotes(params: {
