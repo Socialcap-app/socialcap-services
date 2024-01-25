@@ -56,7 +56,7 @@ This has to be done manually using the app.
 $ sudo login socialcap
 $ ./run/dump-testdb.sh L0
 ~~~
-
+---
 
 ## Level 1 testing
 
@@ -65,6 +65,7 @@ Tests Claim submissions and creation of ClaimVotingAccounts.
 Uses: `testdb-L0`
 
 **1. Restore the testdb-L0 for testing**
+
 ~~~
 $ sudo login socialcap
 $ ./run/restore-testdb.sh L0
@@ -74,40 +75,125 @@ $ ./run/restore-testdb.sh L0
 ~~~
 ./run-api.sh
 ./run-sequencer.sh
-./run-dispatchers.sh
+./run-dispatcher.sh 3081
+./run-dispatcher.sh 3082
 ~~~
 
 **3. Run the tests: Submit claims for each user**
+
 ~~~
 node build/src/tests/run-submit-claims.js
 ~~~
 
 **3. Dump the prepared Db to testdb-L1** 
+
 ~~~
 $ sudo login socialcap
 ./run/dump-testdb.sh L1
 ~~~
-
-
+---
 
 ## Level 2:
 
+Testing the start of the voting process and assign judges to it.
 
-Testing the start the voting process and assign judges to it
+Uses: `testdb-L1`
 
-Requires L0 testing has been done and final results ar available in testdb-L1.
+**1. Restore the testdb-L1 for testing**
 
-3. Start voting and assign judges
+~~~
+$ sudo login socialcap
+$ ./run/restore-testdb.sh L1
+~~~
+
+**2. Start need processes**
+~~~
+./run-api.sh
+./run-sequencer.sh
+./run-dispatcher.sh 3081
+./run-dispatcher.sh 3082
+~~~
+
+**3. Run the tests: Start voting and assign judges**
 ~~~
 node build/src/tests/run-start-and-assign-judges.ts
 ~~~
 
-4. Submit voting batches by judges 
+**4. Dump the prepared Db to testdb-L2**
+
 ~~~
-node build/src/tests/run-submit-batches-form-judges.ts
+$ sudo login socialcap
+./run/dump-testdb.sh L2
+~~~
+---
+
+## Level 3:
+
+Testing the submissions of votes from judges.
+
+Uses: `testdb-L2`
+
+**1. Restore the testdb-L2 for testing**
+~~~
+$ sudo login socialcap
+$ ./run/restore-testdb.sh L2
 ~~~
 
-5. Stop voting and dispatch votes
+**2. Start need processes**
+
+~~~
+./run-api.sh
+./run-sequencer.sh
+./run-dispatcher.sh 3081
+./run-dispatcher.sh 3082
+~~~
+
+**3. Submit voting batches by judges** 
+~~~
+node build/src/tests/run-submit-batches-from-judges.ts
+~~~
+
+**4. Dump the prepared Db to testdb-L3** 
+
+~~~
+$ sudo login socialcap
+./run/dump-testdb.sh L3
+~~~
+---
+
+## Level 4
+
+Tests the dispatch of votes and calculation of results.
+
+Uses: `testdb-L3`
+
+**1. Restore the testdb-L3 for testing**
+
+~~~
+$ sudo login socialcap
+$ ./run/restore-testdb.sh L3
+~~~
+
+**2. Start need processes**
+
+~~~
+./run-api.sh
+./run-sequencer.sh
+./run-dispatcher.sh 3081
+./run-dispatcher.sh 3082
+~~~
+
+**3. Stop voting and dispatch votes**
+
 ~~~
 node build/src/tests/run-stop-voting-dispatch-votes.ts
 ~~~
+
+**4. Dump the prepared Db to testdb-L4** 
+
+~~~
+$ sudo login socialcap
+./run/dump-testdb.sh L4
+~~~
+---
+
