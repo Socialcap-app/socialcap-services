@@ -47,14 +47,20 @@ class Sequencer {
         if (!runningTxn)
           continue;
 
-        if (runningTxn.state === WAITING) 
+        if (runningTxn.state === WAITING) {
           await Sequencer.dispatch(runningTxn, queue, sender);
+          continue;
+        }
 
-        if (runningTxn.state === REVISION) 
+        if (runningTxn.state === REVISION) {
           Sequencer.waitCompletion(runningTxn, queue, sender);
+          continue;
+        }
 
-        if (runningTxn.state === RETRY) 
+        if (runningTxn.state === RETRY) {
           Sequencer.waitRetry(runningTxn, queue, sender);
+          continue;
+        }
       }
 
       // there are no running transactions on this Queue:
@@ -118,15 +124,27 @@ class Sequencer {
     // UNSOLVED: there is some irrecoverable error (possibly because some 
     // coding problem or bad configuartion) and we can do nothing 
     if (result.error?.code === UNRESOLVED_ERROR) {
-      log.error(result.error);
       let unresolvedTxn = await queue.closeUnresolvedTransaction(txn.uid, result);
+      SendersPool.freeSender(queue.name());
+      return;
+    }
+
+    // check if we have retries left !
+    if (result?.error && sender.retries >= MAX_RETRIES) {
+      let failedTxn = await queue.closeFailedTransaction(txn.uid, result);
+      failedTxn.data = JSON.parse(failedTxn.data);
+      await dispatcher.onFailure({
+          uid: failedTxn.uid,
+          type: failedTxn.type,
+          data: JSON.parse(failedTxn.data)
+        }, result, sender
+      );
       SendersPool.freeSender(queue.name());
       return;
     }
 
     // maybe is a Txn error, and we can retry the Txn
     if (result.error) {
-      log.error(result.error);
       let retryTxn = await queue.retryTransaction(txn.uid);
       SendersPool.changeSenderState(queue.name(), MUST_RETRY);
       return;
