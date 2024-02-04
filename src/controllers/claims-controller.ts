@@ -1,5 +1,4 @@
-import { UID } from "@socialcap/contracts";
-import { CLAIMED, WAITING, UNPAID, VOTING } from "@socialcap/contracts";
+import { UID, CLAIMED, WAITING, UNPAID, VOTING } from "@socialcap/contracts-lib";
 import { fastify, prisma, logger } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { waitForTransaction } from "../services/mina-transactions.js";
@@ -91,7 +90,7 @@ export async function getMyClaimables(params: any) {
     return hasResult([]); // no available master plan 
   
   // now we need the communities to extract some data 
-  // because joins are not really available in Prisma?
+  // because joins are not really available in Prisma
   // now all the master plans in each of those communities
   const orgs = await prisma.community.findMany({
     where: { uid: { in: cuids } },
@@ -221,17 +220,20 @@ export async function submitClaim(params: {
     claim.state = CLAIMED; 
     rs = await updateEntity("claim", uid, claim);
 
-    // dispatch to MINA
-    txn = await Sequencer.postTransaction(`claim-${uid}`, {
-      type: 'CREATE_CLAIM_VOTING_ACCOUNT',
-      data: {
-        claimUid: uid,
-        strategy: {
-          requiredPositives: strategy.minPositives,
-          requiredVotes: strategy.minVotes
+    // if we don't have a created MINA account for this claim
+    // we need to create it by dispatching the transaction 
+    if (!claim.accountId) {
+      txn = await Sequencer.postTransaction(`claim-${uid}`, {
+        type: 'CREATE_CLAIM_VOTING_ACCOUNT',
+        data: {
+          claimUid: uid,
+          strategy: {
+            requiredPositives: strategy.minPositives,
+            requiredVotes: strategy.minVotes
+          }
         }
-      }
-    })
+      })
+    }
   }
 
   // check if we need to wait for Payment
@@ -239,7 +241,6 @@ export async function submitClaim(params: {
     // we mark it as WAITING because we are not sure we will receive payment
     claim.state = WAITING; // waiting before not yet paid ...
     rs = await updateEntity("claim", uid, claim);
-
       //     waitForTransaction(
       //       transaction.hash, 
       //       params, 

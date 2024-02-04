@@ -8,7 +8,7 @@ import { getMasterPlan } from "../dbs/plan-helpers.js";
 import { getClaimsByPlan } from "../dbs/claim-helpers.js";
 import { VotingStrategy } from "./voting-strategy.js";
 import { Sequencer } from "../sequencer/core/index.js";
-import { saveJSON } from "../dbs/nullifier-helpers.js";
+import { saveJSON, getJSON } from "../dbs/nullifier-helpers.js";
 //import { sendEmail } from "./email-service.js";
 
 export {
@@ -85,8 +85,14 @@ async function assignAllElectors(planUid: string) {
   console.log("Strategy=", planStrategy);
   
   let claims = await getClaimsByPlan(planUid, { states: [CLAIMED]});
-  
-  let claimsNullifier = new ClaimElectorNullifier();
+
+  // we need to build a new Nullifier or update the existent one
+  const claimsNullifierUid= `claim-elector-nullifier-${planUid}`;
+  let claimsNullifier = await getJSON<ClaimElectorNullifier>(
+    claimsNullifierUid, 
+    new ClaimElectorNullifier()
+  );
+
   let planElectorsNulli = null;
 
   for (let j=0; j < claims.length ; j++) {
@@ -108,9 +114,11 @@ async function assignAllElectors(planUid: string) {
 
     // update Nullifier to avoid invalid/double voting 
     claimsNullifier.addLeafs((electors || []).map((t) => { 
-      let puk = PublicKey.fromBase58(t.accountId);
       return {
-        key: ClaimElectorNullifierLeaf.key(puk, UID.toField(claim.uid)),
+        key: ClaimElectorNullifierLeaf.key(
+          PublicKey.fromBase58(t.accountId), 
+          UID.toField(claim.uid)
+        ),
         value: Field(ASSIGNED),
       }
     }));
@@ -132,17 +140,6 @@ async function assignAllElectors(planUid: string) {
     // assign the tasks to the selected electors
     await assignTaskToElectors(claim, electors); 
 
-    // can create here zkApp account for this claim if it was not already done
-    if (!claim.accountId) {
-      Sequencer.postTransaction(`claim-${claim.uid}`, {
-        type: 'CREATE_CLAIM_VOTING_ACCOUNT',
-        data: {
-          claimUid: claim.uid,
-          strategy: planStrategy
-        }
-      })
-    }
-
     let result = await updateEntity("claim", claim.uid, {
       uid: claim.uid,
       state: VOTING
@@ -150,8 +147,8 @@ async function assignAllElectors(planUid: string) {
     claim = result.proved;
   }
 
-  // we must store the updated Nullifier (where ?)
-  await saveJSON<ClaimElectorNullifier>(`claim-elector-nullifier-${planUid}`, claimsNullifier);
+  // we must store the updated Nullifier
+  await saveJSON<ClaimElectorNullifier>(claimsNullifierUid, claimsNullifier);
 }
 
 

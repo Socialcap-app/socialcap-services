@@ -71,7 +71,7 @@ model KVStore {
   key        String   @unique /// @zod.string.max(132)
   value      String  
 
-  @@map("kvs")
+  @@map("key_values")
 }
 
 //
