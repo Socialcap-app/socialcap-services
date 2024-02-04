@@ -69,7 +69,9 @@ model MerkleMapLeaf {
 //
 model KVStore {
   key        String   @unique /// @zod.string.max(132)
-  value      String   
+  value      String  
+
+  @@map("kvs")
 }
 
 //
