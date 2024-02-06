@@ -9,6 +9,7 @@ import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 import { saveJSON } from "../dbs/nullifier-helpers.js";
 import { CommunityMembers } from "../dbs/members-helpers.js";
 import { createVotesBatch } from "../dbs/batch-helpers.js";
+import { assignAllElectors } from "../services/voting-assign-electors.js";
 import { Sequencer } from "../sequencer/core/index.js";
 
 export async function getTask(params: any) {
@@ -183,6 +184,26 @@ export async function submitTasksBatch(params: {
     }
   })
 
+  return hasResult({
+    tasks: tasks,
+    transaction: { id: txn.uid } // { id: params.txn?.hash || "" }
+  })
+}
+
+
+/**
+ * 
+ * @param planUid the Masterplan that we will be assigning electors to
+ * @param user the user making the request 
+ * @returns 
+ */
+export async function assignElectors(params: {
+  planUid: string
+  user: any,
+}) {
+
+  let done = await assignAllElectors(params.planUid);
+  
   return hasResult({
     tasks: tasks,
     transaction: { id: txn.uid } // { id: params.txn?.hash || "" }

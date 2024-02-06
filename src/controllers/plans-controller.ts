@@ -1,7 +1,10 @@
-import { UID } from "@socialcap/contracts";
+import { UID } from "@socialcap/contracts-lib";
+import { DRAFT, ACTIVE, CLAIMED, ASSIGNED, VOTING, TALLYING, DONE, CANCELED } from "@socialcap/contracts-lib";
 import { fastify, prisma } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
+import { getMasterPlan } from "../dbs/plan-helpers.js";
+import { assignAllElectors } from "../services/voting-assign-electors.js";
 
 
 export async function getPlan(params: any) {
@@ -38,4 +41,178 @@ export async function updatePlan(params: any) {
     plan: rs.proved,
     transaction: rs.transaction
   }); 
+}
+
+
+/**
+ * Manage the different Master plan state changes 
+ * and the actions related to this plan
+ * 
+ * Plan states:
+ * - DRAFT:     when a new master plan is created
+ * - ACTIVE:    when plan is active and people can submit claims
+ * - CLAIMED:   all claims received, no more claims allowed
+ * - VOTING:    we have enabled voting and electors can vote
+ * - TALLYING: no more votes allowed, are counting votes 
+ * - DONE:     we are done, we can issue creds nows 
+ * - CANCELED:  when we have canceled a plan (will not be used)
+ */
+const VALID_STATE_CHANGE = {
+  DRAFT: [ACTIVE, CANCELED],
+  ACTIVE: [DRAFT, CLAIMED, CANCELED],
+  CLAIMED: [ASSIGNED, ACTIVE, CANCELED],
+  VOTING: [TALLYING, ASSIGNED, CANCELED],
+  TALLYING: [VOTING, DONE, CANCELED]
+}
+
+
+/**
+ * Enable the voting process to start. 
+ * 
+ * The first thing we need to do before electors can vote is assign the 
+ * electors, and then we can enable all selected electors to start voting.
+ * The selected electors will have a task for each assigned claim.
+ * 
+ * All claims that had been assigned electors will change its state to VOTING,
+ * and the whole plan will change state to VOTING. 
+ * 
+ * When the Plan is in the VOTING state we can not receive any more claims
+ * and electors can not be reassigned (yet).
+ * 
+ * @param planUid the Masterplan that we will be assigning electors to
+ * @param user the user making the request 
+ * @returns the modified plan
+ */
+export async function enableVoting(params: {
+  planUid: string
+  user: any,
+}) {
+  let plan = await getMasterPlan(params.planUid) ;
+  if (plan?.state !== CLAIMED) 
+    return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the CLAIMED state.We can not assign electors to it.`)
+
+  let assigned = await assignAllElectors(params.planUid);
+  if (assigned.claimsCount === 0)      
+    return hasError.NotFound(`Plan ${plan?.uid} has no claims.We can not assign electors to it.`)
+  if (assigned.electorsCount === 0)      
+    return hasError.NotFound(`Plan ${plan?.uid} has no electors assigned.We can not proceed with the voting.`)
+
+  plan.state = VOTING;
+  let rs = await updatePlan(plan);
+
+  return hasResult(rs)
+}
+
+
+/**
+ * Reassign electors to claims that have just been CLAIMED.
+ * We can not reassign electors to VOTING claims.
+ * @param params planUid
+ * @returns { plan, assigned: { claimsCount, electorsCount } }
+ */
+export async function reassignElectors(params: {
+  planUid: string
+  user: any,
+}) {
+  let plan = await getMasterPlan(params.planUid) ;
+  if (plan?.state !== VOTING) 
+    return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the VOTING state.We can not reassign electors to it.`)
+
+  let assigned = await assignAllElectors(params.planUid);
+  if (assigned.claimsCount === 0)      
+    return hasError.NotFound(`Plan ${plan?.uid} has no claims.We can not assign electors to it.`)
+  if (assigned.electorsCount === 0)      
+    return hasError.NotFound(`Plan ${plan?.uid} has no electors assigned.We can not proceed with the voting.`)
+
+  return hasResult({
+    plan: plan,
+    assigned: assigned
+  })
+}
+
+
+/**
+ * Close the voting process.
+ * After this, nobody can send its votes, and alls tasks should be deleted
+ * or at least marked as done.
+ * Then we can start counting the votes, but it MUST be started manually, we 
+ * do not start counting just when the voting is closed.
+ * @param planUid
+ * @returns { plan }
+ */
+export async function closeVoting(params: {
+  planUid: string
+  user: any,
+}) {
+  let plan = await getMasterPlan(params.planUid) ;
+  if (plan?.state !== VOTING) 
+    return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the VOTING state. We can not close voting.`)
+
+  plan.state = TALLYING;
+  let rs = await updatePlan(plan);
+
+  return hasResult(rs)
+}
+
+
+export async function reopenVoting(params: {
+  planUid: string
+  user: any,
+}) {
+  let plan = await getMasterPlan(params.planUid) ;
+  if (plan?.state !== TALLYING) 
+    return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the TALLYING state. We can not reopen voting.`)
+
+  plan.state = VOTING;
+  let rs = await updatePlan(plan);
+
+  return hasResult(rs)
+}
+
+
+/**
+ * Start the tally.
+ * Here we process al received votes batches and send each collected vote 
+ * to the corresponding claim zkApp.
+ * @param params 
+ */
+export async function startTally(params: {
+  planUid: string
+  user: any,
+}) {
+  let plan = await getMasterPlan(params.planUid) ;
+  if (plan?.state !== TALLYING) 
+    return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the TALLYING state. We can not start counting votes.`)
+
+  // COUNT VOTES HERE !!!
+
+  plan.state = TALLYING;
+  let rs = await updatePlan(plan);
+
+  return hasResult(rs)
+}
+
+export async function closeTally(params: {
+  planUid: string
+  user: any,
+}) {
+  let plan = await getMasterPlan(params.planUid) ;
+  if (plan?.state !== TALLYING) 
+    return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the TALLYING state. We can not close the tally.`)
+
+  plan.state = DONE;
+  let rs = await updatePlan(plan);
+
+  return hasResult(rs)
+}
+
+
+/**
+ * Issue all credentials approved in the plan.
+ * We will not reissue credentials already issued.
+ */
+export async function issueCredentials(params: {
+  planUid: string
+  user: any,
+}) {
 }

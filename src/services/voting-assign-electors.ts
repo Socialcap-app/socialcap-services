@@ -71,12 +71,16 @@ async function assignTaskToElectors(
 
 
 /**
- * Assign all electors to all claims in a given Plan. 
- * - ALL claims in the CLAIMED stated will be assigned electors.
- * - If the claim has previous electors asigned they will be deleted
- *   and reassigned.
+ * Assign all electors to all claims in a given Plan.
+ * 
+ * ONLY claims in the CLAIMED stated will be assigned electors.
+ * If the claim has previous electors asigned they will be deleted
+ * and reassigned. CAUTION: this will ovewrite andyclaim which was returned 
+ * to CLAIMED state after being assigned electors.
+ * 
  * @param planUid the master plan containing the claims and the strategy
  * @updates claims, claim and plan nullifiers and tasks
+ * @returns { claimsCount, electorsCount }
  */
 async function assignAllElectors(planUid: string) {
   
@@ -94,6 +98,7 @@ async function assignAllElectors(planUid: string) {
   );
 
   let planElectorsNulli = null;
+  let electorsCount = 0;
 
   for (let j=0; j < claims.length ; j++) {
     let claim: any = claims[j];
@@ -111,6 +116,7 @@ async function assignAllElectors(planUid: string) {
       auditors
     );
     console.log("Electors=", electors);
+    electorsCount = electorsCount + (electors || []).length;
 
     // update Nullifier to avoid invalid/double voting 
     claimsNullifier.addLeafs((electors || []).map((t) => { 
@@ -149,8 +155,9 @@ async function assignAllElectors(planUid: string) {
 
   // we must store the updated Nullifier
   await saveJSON<ClaimElectorNullifier>(claimsNullifierUid, claimsNullifier);
-}
 
-
-async function reAssignElectors(planUid: string) {
+  return {
+    claimsCount: claims.length,
+    electorsCount: electorsCount
+  }
 }
