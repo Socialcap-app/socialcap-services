@@ -10,10 +10,10 @@ RUN sh install-node.sh
 RUN apt install -y nodejs
 
 # Install the App
-WORKDIR /api
-COPY ./ /api
+WORKDIR /services
+COPY ./ /services
 
-RUN cd /api
+RUN cd /services
 RUN npm i 
 RUN npm i @socialcap/contracts
 RUN npx prisma generate

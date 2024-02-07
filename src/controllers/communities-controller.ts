@@ -4,6 +4,8 @@ import { prisma } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { CLAIMED, DRAFT } from "@socialcap/contracts";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
+import { CommunityMembers } from "../dbs/members-helper.js";
+import { getCommunityClaims, getCommunityCounters, getCommunityClaimsByPlan } from "../dbs/community-helpers.js";
 import { CommunityMembers } from "../dbs/members-helpers.js";
 import { getCommunityClaims, getCommunityCounters } from "../dbs/community-helpers.js";
 
@@ -169,7 +171,7 @@ export async function prepareCommunityClaimsDownload(
       if (claim.state === 4) stateDescr = "CLAIMED"; 
 
       let values = [
-        `"${claim.applicant.fullName}"`,
+        `"${claim.applicant?.fullName || ''}"`,
         `"${claim.uid}"`,
         `"${stateDescr}"`
       ];
@@ -192,6 +194,66 @@ export async function prepareCommunityClaimsDownload(
   }
 }
 
+export async function prepareCommunityPlanClaimsDownload(
+  uid: string,
+  planUid: string,
+  fileName: string,
+  states?: string
+) {
+  try {
+    let members = await (new CommunityMembers()).build(uid);
+ 
+    let claims = await getCommunityClaimsByPlan(uid, planUid, members, [DRAFT,CLAIMED]) || [];
+
+    let content = "";
+
+    // if no claims we return an empty file
+    if (! claims.length) {
+      fs.writeFileSync(fileName, "", { flag: 'w+' });      
+      return true;
+    }
+    
+    // prepare headers, use first available row
+    let fields = JSON.parse(claims[0].evidenceData) || [];
+
+    let headers = ['"Full Name"','"Claim Id"','"Status"'];
+    fields.forEach((field: any) => {
+      if (field.type !== 'remark') 
+        headers.push(`"${field.label}"`);
+    })
+    content = content + headers.join(',') + '\n';
+
+    // now traverse claims and its fields
+    claims.forEach((claim: any) => {
+      let fields = JSON.parse(claim.evidenceData) || [];
+
+      let stateDescr;
+      if (claim.state === 1) stateDescr = "DRAFT"; 
+      if (claim.state === 4) stateDescr = "CLAIMED"; 
+
+      let values = [
+        `"${claim.applicant?.fullName || ''}"`,
+        `"${claim.uid}"`,
+        `"${stateDescr}"`
+      ];
+      fields.forEach((field: any) => {
+        if (field.type !== 'remark') 
+          values.push(`"${valueToString(field)}"`);
+      })
+
+      content = content + values.join(',') + '\n';
+    })
+
+    // write it now
+    fs.writeFileSync(fileName, content, { flag: 'w+' });      
+    
+    return true; 
+  }
+  catch (err) {
+    console.log(err);
+    return false;
+  }
+}
 
 /**
  * Helpers

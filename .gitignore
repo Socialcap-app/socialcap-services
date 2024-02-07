@@ -12,7 +12,7 @@ node_modules
 # databases and stores
 /prisma/db.sqlite
 /prisma/db.sqlite-journal
-kvstores
+/kvstores
 
 # Never commit keys to Git!
 keys

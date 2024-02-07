@@ -3,7 +3,7 @@ import { logger, merkleStorage } from "./global.js";
 import { WAITING } from "@socialcap/contracts-lib";
 import { OffchainMerkleStorage } from "./dbs/offchain-merkle-storage.js";
 import { findCommunityByName } from "./dbs/community-helpers.js";
-import { findMasterPlanByName } from "./dbs/plan-helpers.js";
+import { findMasterPlanByName, getMasterPlan } from "./dbs/plan-helpers.js";
 import { getBatchesByPlan } from "./dbs/batch-helpers.js";
 import { updateClaimVotes } from "./dbs/claim-helpers.js";
 import { Sequencer } from "./sequencer/core/sequencer.js";
@@ -95,15 +95,18 @@ async function run(communityName: string, planName: string) {
 
   console.log("\n\n\nFinal count Claim + - 0");
   Object.keys(collector).forEach(async (key) => {
-    let t = collector[key];
-    console.log(`Claim ${t.uid}  Y=${t.positive} N=${t.negative} A=${t.ignored}`);
+    // 
+    let collected = collector[key];
+    console.log(`Claim ${collected.uid} Y=${collected.positive} N=${collected.negative} A=${collected.ignored}`);
 
     let claim = await updateClaimVotes({
-      uid: t.uid,
-      positive: t.positive,
-      negative: t.negative,
-      ignored: t.ignored
+      uid: collected.uid,
+      positive: collected.positive,
+      negative: collected.negative,
+      ignored: collected.ignored
     })
+
+    let plan = await getMasterPlan(claim.planUid);
 
     // Now submit transactions to MINA 
     // the queue name will be the publicKey of the account, so that all 
@@ -111,11 +114,12 @@ async function run(communityName: string, planName: string) {
     // and be processed in the order they were received
     let qName = `${claim.uid}` || "";  
 
-    // we have to create the Account in MINA
+    // if it has not been already created we have to create the 
+    // ClaimVoting account in MINA
     if (! claim.accountId) {
       /*
       Sequencer.postTransaction(qName, {
-        type: 'CREATE_CLAIM_VOTING_ACCOUNT',
+        type: CREATE_CLAIM_VOTING_ACCOUNT,
         data: {
           claimUid: claim.uid,
           strategy: plan?.strategy,
@@ -128,7 +132,7 @@ async function run(communityName: string, planName: string) {
     if (claim.accountId) {
       /*
       Sequencer.postTransaction(qName, {
-        type: 'SEND_CLAIM_VOTE',
+        type: SEND_CLAIM_VOTE,
         data: {
           claimUid: claim.uid,
           electorPuk: votes.elector,
@@ -145,22 +149,6 @@ async function run(communityName: string, planName: string) {
       */
     }
   })
-
-  // send the Tx to MINA for zkApp.updateNullifier()
-  // we dont really need this ? 
-  /*
-  await MinaService.updateNullifierRoot(
-    nullifier, 
-    nullifierUpdate,
-    { electors: electors, claim: claim },
-    async (params: any) => { return ; }, // done !
-    (params: any, error: any) => {
-      // nothing we can do ... we just log it
-      logger.error(`updateNullifier root failed err=${error.toString()}`);
-    }
-  )
-  */
-
 }
 
 
