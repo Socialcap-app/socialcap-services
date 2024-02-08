@@ -131,7 +131,7 @@ class OffchainMerkleStorage {
   static startup() {
     if (OffchainMerkleStorage.started) return ;
 
-    console.log("OffchainMerkleStorage starting ...");
+    logger.info("OffchainMerkleStorage starting ...");
     setTimeout(async () => {
       const maps = await prisma.merkleMap.findMany(
         { orderBy: { id: 'asc' }}
@@ -143,7 +143,7 @@ class OffchainMerkleStorage {
       }
   
       OffchainMerkleStorage.started = true;
-      console.log("OffchainMerkleStorage started");
+      logger.info("OffchainMerkleStorage started");
     }, 100);
 
     return OffchainMerkleStorage;

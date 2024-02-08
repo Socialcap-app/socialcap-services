@@ -90,7 +90,7 @@ fastify.post('/on-failure/:name', async (request, reply) => {
  * Setup and listen
  */
 let args = process.argv.slice(2);
-const port = Number(args[0]);
+const PORT = Number(args[0]);
 
 Mina.setActiveInstance(Mina.Network({
   mina: 'https://proxy.berkeley.minaexplorer.com/graphql', 
@@ -102,7 +102,7 @@ setupDispatchers([
   (new SendClaimVoteDispatcher())
 ]);
 
-fastify.listen({ port: port }, (err, address) => {
+fastify.listen({ port: PORT }, (err, address) => {
   if (err) {
     logger.error(err);
     process.exit(1);

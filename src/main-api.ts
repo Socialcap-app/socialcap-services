@@ -27,15 +27,18 @@ fastify.register(cors, {
 });
 
 /**
- * Run the server!
+ * Setup and listen
  */
-fastify.listen({ port: 3080 }, (err, address) => {
+let args = process.argv.slice(2);
+const PORT = Number(args[0] || '30080');
+
+fastify.listen({ port: PORT }, (err, address) => {
   if (err) {
     logger.error(err);
     process.exit(1);
   }
-  console.log(`Server listening at ${address}`);
-  console.log(fastify.routes);
+  logger.info(`Socialcap API listening at ${address}`);
+  // console.log(fastify.routes);
 
   // we need the Db to be ready before we can do this
   merkleStorage.startup();
