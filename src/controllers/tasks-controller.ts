@@ -192,26 +192,6 @@ export async function submitTasksBatch(params: {
 
 
 /**
- * 
- * @param planUid the Masterplan that we will be assigning electors to
- * @param user the user making the request 
- * @returns 
- */
-export async function assignElectors(params: {
-  planUid: string
-  user: any,
-}) {
-
-  let done = await assignAllElectors(params.planUid);
-  
-  return hasResult({
-    tasks: tasks,
-    transaction: { id: txn.uid } // { id: params.txn?.hash || "" }
-  })
-}
-
-
-/**
  * Helpers
  */
 export async function getNullifier(params: any) {
