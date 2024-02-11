@@ -27,13 +27,13 @@ export function setupSequencer(params: {
   (params.dispatchers || []).forEach((dispatcher) => {
     const name = dispatcher.name();
     Sequencer.addDispatcher(name);
-    log.info(`Added dispatcher ${name}`)
+    log.info(`Dispatcher name=${name}`)
   })
 
   log.info("Setting worker sender accounts");
   (params.workers || []).forEach((sender) => {
     SendersPool.addSender(sender.accountId, sender.secretKey, sender.workerUrl);
-    log.info(`Added sender ${sender.accountId} ${sender.workerUrl}`)
+    log.info(`Worker id=${sender.accountId} url=${sender.workerUrl}`)
   })
 }
 

@@ -3,6 +3,7 @@
  * cycles. We want to avoid excesive/long console.log lines that interrupt 
  * code legibility.
  */
+import { logger } from "../../global.js";
 import { TxnEvent } from "./transaction-events.js";
 import { IError } from "./error-codes.js";
 import { TxnResult } from "./transaction-queues.js";
@@ -16,70 +17,70 @@ export class SequencerLogger {
   }
 
   static started() {
-    console.log(`${dts()}: Started`);
+    logger.info(`Started`);
   }
 
   static running(qnames?: string[]) {
-    console.log(`${dts()}: INFO Sequencer.run queues=${JSON.stringify(qnames || '[]')}`);
+    logger.info(`Sequencer.run queues=${JSON.stringify(qnames || '[]')}`);
   }
 
   static activeQueue(q: any) {
-    console.log(`${dts()}: INFO Sequencer.run activeQueue name=${q._queue} runningTxn=${q._txRunning || "NO"}`)
+    logger.info(`Sequencer.run activeQueue name=${q._queue} runningTxn=${q._txRunning || "NO"}`)
   }
 
   static postedTxn(txn: any) {
-    console.log(`${dts()}: INFO Sequencer.postTransaction uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
+    logger.info(`Sequencer.postTransaction uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
   }
 
   static dispatching(txn: any) {
-    console.log(`${dts()}: INFO Sequencer.dispatch uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
+    logger.info(`Sequencer.dispatch uid=${txn.uid} ${txn.type} data=${JSON.stringify(txn.data)}`);
   }
 
   static pendingTxn(txn: any) {
-    console.log(`${dts()}: INFO pendingTxn=`, JSON.stringify(txn.hash()));
+    logger.info(`pendingTxn=`, JSON.stringify(txn.hash()));
   }
 
   static dispatchedTxn(result: any) {
     const link = `https://berkeley.minaexplorer.com/transaction/${result.hash}`
-    console.log(`${dts()}: Sequencer.dispatch dispatchedTxn hash=${result.hash} url=${link}`);
+    logger.info(`Sequencer.dispatch dispatchedTxn hash=${result.hash} url=${link}`);
   }
 
   static retryPending(txn: any) {
-    console.log(`${dts()}: Sequencer.dispatch txnRetry uid=${txn.uid} retries=${txn.retries}`);
+    logger.info(`Sequencer.dispatch txnRetry uid=${txn.uid} retries=${txn.retries}`);
   }
 
   static waitingAccount(msg: string) {
-    console.log(`${dts()}: waiting account ${msg}`);
+    logger.info(`waiting account ${msg}`);
   }
 
   static waitingTransaction(hash: string, elapsed: number, done: any) {
-    console.log(
-      `${dts()}: INFO Dispatcher.waitForInclusion, txn ${elapsed}secs hash=${hash} done=${!!done}`
+    logger.info(
+      `Dispatcher.waitForInclusion, txn ${elapsed}secs hash=${hash} done=${!!done}`
       +(done ? ` ${JSON.stringify(done)}` : "")
     );
   }
 
   static postedEv(ev: TxnEvent) {
-    console.log(`${dts()}: postEvent ${ev.type} subject=${ev.subject} payload=${JSON.stringify(ev.payload)}`);
+    logger.info(`postEvent ${ev.type} subject=${ev.subject} payload=${JSON.stringify(ev.payload)}`);
   }
 
   static zkAppInstance(id: string) {
-    console.log(`${dts()}: INFO Dispatcher.dispatch zkAppInstance id=${id}`)
+    logger.info(`Dispatcher.dispatch zkAppInstance id=${id}`)
   }
 
   static error(err: any) {
-    console.log(`${dts()}: ERROR `, err);
+    logger.error(err);
   }
 
   static info(msg: any) {
-    console.log(`${dts()}: INFO `, msg);
+    logger.info(msg);
   }
 
   static result(msg: string, result: TxnResult) {
     if (result.error)
-      console.log(`${dts()}: ERROR ${msg} error=${JSON.stringify(result.error)}`);
+      logger.error(`${msg} error=${JSON.stringify(result.error)}`);
     else
-      console.log(`${dts()}: INFO  ${msg} result=${JSON.stringify(result)}`);
+      logger.info(`${msg} result=${JSON.stringify(result)}`);
   }
 } 
 
