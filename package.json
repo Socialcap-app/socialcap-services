@@ -43,7 +43,7 @@
     "typedoc": "^0.24.8",
     "typedoc-plugin-markdown": "^3.17.1",
     "typedoc-plugin-merge-modules": "^5.1.0",
-    "typescript": "^4.7.2",
+    "typescript": "5.1",
     "zod-prisma-types": "^2.7.4"
   },
   "dependencies": {
@@ -56,9 +56,12 @@
     "@socialcap/contracts": "^0.1.30",
     "@socialcap/contracts-lib": "^0.1.15",
     "axios": "^1.4.0",
-    "fastify": "^4.17.0",
+    "fastify": "^4.26.0",
+    "form-data": "^4.0.0",
     "lmdb": "^2.9.2",
-    "mailgun.js": "^9.2.1",
-    "o1js": "^0.14.2"
+    "mailgun": "^0.5.0",
+    "mailgun.js": "^10.1.0",
+    "o1js": "^0.14.2",
+    "pino-pretty": "^10.3.1"
   }
 }
