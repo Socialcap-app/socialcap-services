@@ -8,12 +8,22 @@ import {
   CreateClaimVotingAccountDispatcher,
   SendClaimVoteDispatcher
 } from "./sequencer/dispatchers/index.js"
+import { logger } from './global.js';
 
-const SENDER_KEY = process.env.SENDER_KEY as string;
-const SENDER_ID = process.env.SENDER_ID as string;
-const DEPLOYER_KEY = process.env.DEPLOYER_KEY as string;
-const DEPLOYER_ID = process.env.DEPLOYER_ID as string;
-
+// load worker options from .env
+let WORKERS = [];
+let basePort = Number(process.env.WORKERS_BASE_PORT);
+let baseUrl = String(process.env.WORKERS_BASE_URL);
+for (let j=0; j < 2; j++) {
+  let port = String(basePort+(j+1))
+  let key = 'WORKER_'+(String(j+1).padStart(2, '0')); 
+  let [pk,sk] = String(process.env[key]).split(',');
+  WORKERS[j] = {
+    accountId: pk, 
+    secretKey: sk, 
+    workerUrl: `${baseUrl}:${port}`
+  }
+}
 
 setupSequencer({
   // we need to instantiate all senders and dispatchers, 
@@ -22,18 +32,7 @@ setupSequencer({
     (new CreateClaimVotingAccountDispatcher()),
     (new SendClaimVoteDispatcher())
   ],
-  workers: [
-    { 
-      accountId: DEPLOYER_ID, 
-      secretKey: DEPLOYER_KEY, 
-      workerUrl: "http://localhost:3081" 
-    },
-    { 
-      accountId: SENDER_ID, 
-      secretKey: SENDER_KEY, 
-      workerUrl: "http://localhost:3082" 
-    },
-  ]
+  workers: WORKERS,
 })
 
 startSequencer() ;

@@ -93,8 +93,8 @@ let args = process.argv.slice(2);
 const PORT = Number(args[0]);
 
 Mina.setActiveInstance(Mina.Network({
-  mina: 'https://proxy.berkeley.minaexplorer.com/graphql', 
-  archive: 'https://archive.berkeley.minaexplorer.com/'
+  mina: process.env.MINA_GRAPHQL as string, 
+  archive: process.env.MINA_ARCHIVE as string
 }));
 
 setupDispatchers([
@@ -107,7 +107,9 @@ fastify.listen({ port: PORT }, (err, address) => {
     logger.error(err);
     process.exit(1);
   }
-  console.log(`Server listening at ${address}`);
+  logger.info(`Dispatcher listening at ${address}`);
+  logger.info(`MINA graphql=${process.env.MINA_GRAPHQL}`);
+  logger.info(`MINA archive=${process.env.MINA_ARCHIVE}`);
 
   // we need the Db to be ready before we can do this
   merkleStorage.startup();
