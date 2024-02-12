@@ -3,7 +3,7 @@ import { DRAFT, ACTIVE, CLAIMED, ASSIGNED, VOTING, TALLYING, DONE, CANCELED } fr
 import { fastify, prisma } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
-import { getMasterPlan } from "../dbs/plan-helpers.js";
+import { getMasterPlan, changeMasterPlanState } from "../dbs/plan-helpers.js";
 import { assignAllElectors } from "../services/voting-assign-electors.js";
 
 
@@ -60,9 +60,27 @@ export async function updatePlan(params: any) {
 const VALID_STATE_CHANGE = {
   DRAFT: [ACTIVE, CANCELED],
   ACTIVE: [DRAFT, CLAIMED, CANCELED],
-  CLAIMED: [ASSIGNED, ACTIVE, CANCELED],
-  VOTING: [TALLYING, ASSIGNED, CANCELED],
+  CLAIMED: [VOTING, ACTIVE, CANCELED],
+  VOTING: [TALLYING, CLAIMED, CANCELED],
   TALLYING: [VOTING, DONE, CANCELED]
+}
+
+
+/**
+ * Stop the claimings process. No more submissions will be accepted.
+ * @param params 
+ * @returns 
+ */
+export async function stopClaimings(params: {
+  planUid: string
+  user: any,
+}) {
+  let plan = await getMasterPlan(params.planUid) ;
+  if (plan?.state !== ACTIVE) 
+    return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the ACTIVE state.We can stop it.`)
+
+  let rs = await changeMasterPlanState(plan.uid, CLAIMED);
+  return hasResult(rs)
 }
 
 
@@ -97,9 +115,7 @@ export async function enableVoting(params: {
   if (assigned.electorsCount === 0)      
     return hasError.NotFound(`Plan ${plan?.uid} has no electors assigned.We can not proceed with the voting.`)
 
-  plan.state = VOTING;
-  let rs = await updatePlan(plan);
-
+  let rs = await changeMasterPlanState(plan.uid, VOTING);
   return hasResult(rs)
 }
 
@@ -148,9 +164,7 @@ export async function closeVoting(params: {
   if (plan?.state !== VOTING) 
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the VOTING state. We can not close voting.`)
 
-  plan.state = TALLYING;
-  let rs = await updatePlan(plan);
-
+  let rs = await changeMasterPlanState(plan.uid, TALLYING);
   return hasResult(rs)
 }
 
@@ -163,9 +177,7 @@ export async function reopenVoting(params: {
   if (plan?.state !== TALLYING) 
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the TALLYING state. We can not reopen voting.`)
 
-  plan.state = VOTING;
-  let rs = await updatePlan(plan);
-
+  let rs = await changeMasterPlanState(plan.uid, VOTING);
   return hasResult(rs)
 }
 
@@ -186,9 +198,7 @@ export async function startTally(params: {
 
   // COUNT VOTES HERE !!!
 
-  plan.state = TALLYING;
-  let rs = await updatePlan(plan);
-
+  let rs = await changeMasterPlanState(plan.uid, TALLYING);
   return hasResult(rs)
 }
 
@@ -200,9 +210,7 @@ export async function closeTally(params: {
   if (plan?.state !== TALLYING) 
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the TALLYING state. We can not close the tally.`)
 
-  plan.state = DONE;
-  let rs = await updatePlan(plan);
-
+  let rs = await changeMasterPlanState(plan.uid, DONE);
   return hasResult(rs)
 }
 

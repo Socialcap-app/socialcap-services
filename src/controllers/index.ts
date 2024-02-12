@@ -11,7 +11,7 @@ import { getTask, getMyTasks, getNullifier, submitTask, submitTasksBatch } from 
 import { getCredential, getMyCredentials } from "./credentials-controller.js";
 import { queryEmptySet } from "./empty-set.js"
 import { getMyHome } from "./home-controllers.js";
-import { enableVoting, reassignElectors, closeVoting, reopenVoting } from "./plans-controller.js"; 
+import { enableVoting, stopClaimings, reassignElectors, closeVoting, reopenVoting } from "./plans-controller.js"; 
 import { startTally, closeTally, issueCredentials } from "./plans-controller.js"; 
 
 export { 
@@ -38,6 +38,7 @@ const mutationHandlers = {
   'submit_claim': { fn: submitClaim, authorize: true },
   'submit_task':  { fn: submitTask, authorize: true },
   'submit_tasks_batch':  { fn: submitTasksBatch, authorize: true },
+  'stop_claimings': { fn: stopClaimings, authorize: true},
   'enable_voting': { fn: enableVoting, authorize: true},
   'reassign_electors': { fn: reassignElectors, authorize: true},
   'close_voting': { fn: closeVoting, authorize: true},
