@@ -4,7 +4,7 @@
 export PORT=308${1}
 export NAME=sc-dispatcher${1}
 
-sudo docker rm $(docker stop $NAME)
+sudo docker rm $(sudo docker stop $NAME)
 sudo docker -l debug run -d --restart=always --name $NAME \
   --net=host \
   --env PORT=$PORT \

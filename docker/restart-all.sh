@@ -7,7 +7,7 @@ sudo docker build -t socialcap/services:base -f ./docker/base.Dockerfile .
 sudo docker build -t socialcap/services:run -f ./docker/run.Dockerfile .
 
 # will run the Socialcap API in host port 30800 
-sudo docker rm $(docker stop sc-api)
+sudo docker rm $(sudo docker stop sc-api)
 sudo docker -l debug run -d --restart=always --name sc-api \
   --net=host \
   --env PORT=30800 \
@@ -17,7 +17,7 @@ sudo docker -l debug run -d --restart=always --name sc-api \
   socialcap/services:run
 
 # will run the Socialcap Sequencer with NO port
-sudo docker rm $(docker stop sc-sequencer)
+sudo docker rm $(sudo docker stop sc-sequencer)
 sudo docker -l debug run -d --restart=always --name sc-sequencer \
   --net=host \
   --env MAIN=main-sequencer \
