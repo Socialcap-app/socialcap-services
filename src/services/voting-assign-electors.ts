@@ -7,7 +7,7 @@ import { getValidators, getAuditors } from "../dbs/members-helpers.js";
 import { getMasterPlan } from "../dbs/plan-helpers.js";
 import { getClaimsByPlan } from "../dbs/claim-helpers.js";
 import { VotingStrategy } from "./voting-strategy.js";
-import { Sequencer } from "../sequencer/core/index.js";
+import { postCreateClaimVotingAccount, RawTxnData } from "../dbs/sequencer-helpers.js";
 import { saveJSON, getJSON } from "../dbs/nullifier-helpers.js";
 //import { sendEmail } from "./email-service.js";
 
@@ -80,7 +80,7 @@ async function assignTaskToElectors(
  * 
  * @param planUid the master plan containing the claims and the strategy
  * @updates claims, claim and plan nullifiers and tasks
- * @returns { claimsCount, electorsCount }
+ * @returns { claimsCount, electorsCount, transactions }
  */
 async function assignAllElectors(planUid: string) {
   
@@ -99,6 +99,7 @@ async function assignAllElectors(planUid: string) {
 
   let planElectorsNulli = null;
   let electorsCount = 0;
+  let txns: RawTxnData[] = [];
 
   for (let j=0; j < claims.length ; j++) {
     let claim: any = claims[j];
@@ -155,16 +156,11 @@ async function assignAllElectors(planUid: string) {
     // if we don't have a created MINA zkApp account for this Claim
     // we need to create it by dispatching the transaction 
     if (!claim.accountId) {
-      let txn = await Sequencer.postTransaction(`claim-${claim.uid}`, {
-        type: 'CREATE_CLAIM_VOTING_ACCOUNT',
-        data: {
-          claimUid: claim.uid,
-          strategy: {
-            requiredPositives: planStrategy.minPositives,
-            requiredVotes: planStrategy.minVotes
-          }
-        }
-      })
+      let txn = await postCreateClaimVotingAccount({
+        claimUid: claim.uid, 
+        strategy: planStrategy
+      });
+      txns.push(txn);
     }
   }
 
@@ -173,6 +169,7 @@ async function assignAllElectors(planUid: string) {
 
   return {
     claimsCount: claims.length,
-    electorsCount: electorsCount
+    electorsCount: electorsCount,
+    transactions: txns
   }
 }

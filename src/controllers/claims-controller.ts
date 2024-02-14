@@ -4,8 +4,8 @@ import { hasError, hasResult, raiseError } from "../responses.js";
 import { waitForTransaction } from "../services/mina-transactions.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 import { getMasterPlan } from "../dbs/plan-helpers.js";
-import { Sequencer } from "../sequencer/core/index.js";
-//import { startClaimVotingProcess } from "../services/voting-process-votes.js";
+import { postCreateClaimVotingAccount } from "../dbs/sequencer-helpers.js"; 
+
 
 type Claimable = {
   uid: string, // the UID of the MasterPlan ...
@@ -223,16 +223,10 @@ export async function submitClaim(params: {
     // if we don't have a created MINA account for this claim
     // we need to create it by dispatching the transaction 
     if (!claim.accountId) {
-      txn = await Sequencer.postTransaction(`claim-${uid}`, {
-        type: 'CREATE_CLAIM_VOTING_ACCOUNT',
-        data: {
-          claimUid: uid,
-          strategy: {
-            requiredPositives: strategy.minPositives,
-            requiredVotes: strategy.minVotes
-          }
-        }
-      })
+      txn = await postCreateClaimVotingAccount({
+        claimUid: uid, 
+        strategy: strategy
+      });
     }
   }
 
@@ -262,9 +256,6 @@ export async function submitClaim(params: {
 
   return hasResult({
     claim: rs.proved,
-    transaction: { 
-      uid: txn?.uid || '',
-      type: txn.type || "UNKNOWN" 
-    }
+    transaction: txn
   }); 
 }

@@ -8,8 +8,9 @@ import { waitForTransaction } from "../services/mina-transactions.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 import { saveJSON } from "../dbs/nullifier-helpers.js";
 import { CommunityMembers } from "../dbs/members-helpers.js";
-import { createVotesBatch } from "../dbs/batch-helpers.js";
+import { createVotesBatch, unpackSignedData } from "../dbs/batch-helpers.js";
 import { assignAllElectors } from "../services/voting-assign-electors.js";
+import { postReceiveVotesBatch } from "../dbs/sequencer-helpers.js";
 import { Sequencer } from "../sequencer/core/index.js";
 
 export async function getTask(params: any) {
@@ -135,9 +136,9 @@ export async function submitTasksBatch(params: {
   let { addToQueue } = params.extras || { addToQueue: true };
 
   console.log(signedPack);
-  let unpacked = JSON.parse(signedPack.data.split('data:')[1]);
-  let votes = unpacked.votes || [];
-  let root = unpacked.root;
+  let unpacked = unpackSignedData(signedPack);
+  let votes = unpacked.data.votes || [];
+  let root = unpacked.data.root;
 
   let tasks = [];
   let leafs: { value: Field }[] = [];
@@ -173,7 +174,7 @@ export async function submitTasksBatch(params: {
 
   // create and save the Batch for processing
   let batch = await createVotesBatch({
-    senderAccountId: params.senderAccountId,
+    senderAccountId: senderAccountId,
     signedData: signedPack
   });
   logger.info(`VotesBatch created uid=${batch.uid} sequence=${batch.sequence} size=${batch.size} state=${batch.state}`);
@@ -183,18 +184,11 @@ export async function submitTasksBatch(params: {
   logger.info(`BatchVoteNullifier created uid=${batch.uid} root=${nullifier.root()}`);
 
   // finally send the Batch to MINA
-  let txn = await Sequencer.postTransaction(`batch-${batch.uid}`, {
-    type: 'RECEIVE_VOTES_BATCH',
-    data: {
-      batchUid: batch.uid,
-      senderAccountId: params.senderAccountId,
-      signedData: signedPack      
-    }
-  })
+  let txn = await postReceiveVotesBatch(batch.uid, senderAccountId, signedPack);
 
   return hasResult({
     tasks: tasks,
-    transaction: { uid: txn.uid } // { id: params.txn?.hash || "" }
+    transaction: txn //
   })
 }
 
