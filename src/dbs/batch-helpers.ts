@@ -5,8 +5,17 @@ export interface SignedData {
   publicKey: string;
   data: string; 
   signature: {
-      field: string;
-      scalar: string;
+    field: string;
+    scalar: string;
+  };
+}
+
+export interface UnpackedSignedData {
+  publicKey: string;
+  data: any;
+  signature: {
+    field: string;
+    scalar: string;
   };
 }
 
@@ -26,15 +35,26 @@ export interface VotesBatchMetadata {
   assigneeUid: string, // the elector Uid who submitted this batch
 }
 
+export function unpackSignedData(signedData: SignedData): UnpackedSignedData { 
+  // retrieve and parse received signed data
+  return {
+    publicKey: signedData.publicKey,
+    signature: signedData.signature,
+    data: JSON.parse(signedData.data),
+  }
+}
+
+
 export async function createVotesBatch(params: {
   senderAccountId: string,
   signedData: SignedData,
 }): Promise<any> {
+  let { senderAccountId, signedData } = params;
 
   // retrieve and parse received signed data
-  let unpacked = JSON.parse(params.signedData.data.split('data:')[1]);
-  let votes = (unpacked.votes || []) as SignedVote[];
-  let root = unpacked.root;
+  let unpacked = unpackSignedData(signedData);
+  let votes = unpacked.data.votes || [];
+  let root = unpacked.data.root;
 
   if (! votes.length) 
     // we just ignore this batch, because it has no votes
@@ -54,10 +74,10 @@ export async function createVotesBatch(params: {
       planUid: firstVote.planUid,
       assigneeUid: firstVote.assigneeUid,
     }),
-    signerAccountId: params.senderAccountId, // this is the Signed data received    
-    signedData: params.signedData.data, // JSON string
-    signatureField: params.signedData.signature.field,
-    signatureScalar: params.signedData.signature.scalar,
+    signerAccountId: senderAccountId, // this is the Signed data received    
+    signedData: signedData.data, // JSON string
+    signatureField: signedData.signature.field,
+    signatureScalar: signedData.signature.scalar,
     size: votes.length,
     commitment: root, // the root of the BatchVote nullifier
     state: WAITING, // we wait for the sequencer to process it

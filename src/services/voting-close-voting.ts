@@ -3,9 +3,9 @@ import { VOTING, TALLYING, IGNORED } from "@socialcap/contracts-lib";
 import { logger, prisma } from "../global.js";
 import { changeAssignedTasksStateByPlan } from "../dbs/task-helpers.js";
 import { changeMasterPlanState, getMasterPlan } from "../dbs/plan-helpers.js";
-import { Sequencer } from "../sequencer/core/index.js";
+import { postCommitAllBatches } from "../dbs/sequencer-helpers.js";
 
-export { closeVoting }
+export { closeAllVoting };
 
 
 /**
@@ -17,30 +17,17 @@ export { closeVoting }
  * @param planUid the Plan where we stop the voting process
  * @returns the Txn linked to all batches rollup
  */
-async function closeVoting(
-  planUid: string
-): Promise<string | null> {
-  let plan = await getMasterPlan(planUid);
-  if (plan?.state !== VOTING) {
-    logger.error(`ERROR: We can not change plan=${planUid} state to TALLYING. The plan is not in the VOTING state`)
-    return null
-  }
-
-  plan = await changeMasterPlanState(planUid, TALLYING);
-  if (!plan) {
-    logger.error(`ERROR: Changing plan=${planUid} state to TALLYING has FAILED for some DB reason`)
-    return null
-  }
-
-  let count = await changeAssignedTasksStateByPlan(planUid, IGNORED); 
+async function closeAllVoting(
+  plan: any
+): Promise<any | null> {
+  //  mark all unfinished tasks as IGNORED to avoid doing them 
+  let count = await changeAssignedTasksStateByPlan(plan.uid, IGNORED); 
 
   // rollup all batches and settle them in MINA
-   let txn = Sequencer.postTransaction(`plan-${planUid}`, {
-    type: 'COMMIT_ALL_BATCHES', 
-    data: {
-      planUid: planUid
-    }
-  })
+  let txn = await postCommitAllBatches(plan.uid)
 
-  return txn ;
+  return {
+    unfinishedTasksCount: count,
+    transaction: txn
+  }
 } 

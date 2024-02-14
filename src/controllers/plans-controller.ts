@@ -5,6 +5,7 @@ import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 import { getMasterPlan, changeMasterPlanState } from "../dbs/plan-helpers.js";
 import { assignAllElectors } from "../services/voting-assign-electors.js";
+import { closeAllVoting } from "../services/voting-close-voting.js";
 
 
 export async function getPlan(params: any) {
@@ -164,8 +165,14 @@ export async function closeVoting(params: {
   if (plan?.state !== VOTING) 
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the VOTING state. We can not close voting.`)
 
+  // services/voting-close-voting
+  let done = await closeAllVoting(plan);
+  
   let rs = await changeMasterPlanState(plan.uid, TALLYING);
-  return hasResult(rs)
+  return hasResult({
+    plan: rs,
+    transaction: done.transaction
+  })
 }
 
 

@@ -1,9 +1,8 @@
 import { Field, PublicKey } from "o1js";
 import { TALLYING, WAITING, DONE } from "@socialcap/contracts-lib";
 import { logger } from "../global.js";
-import { getBatchesByPlan, SignedVote } from "../dbs/batch-helpers.js";
-import { getMasterPlan } from "../dbs/plan-helpers.js";
-import { Sequencer } from "../sequencer/core/index.js";
+import { getBatchesByPlan, SignedVote, unpackSignedData } from "../dbs/batch-helpers.js";
+import { postSendClaimVote } from "../dbs/sequencer-helpers.js";
 
 export { processVotesBatches }
 
@@ -13,58 +12,35 @@ export { processVotesBatches }
  * @param planUid 
  */
 async function processVotesBatches(
-  planUid: string
+  plan: any
 ) {
-  let plan = await getMasterPlan(planUid);
-  if (plan?.state !== TALLYING) {
-    logger.error(`ERROR: Plan=${planUid} is not in the TALLYING state.`)
-    return null
-  }
   let planStrategy = JSON.parse((plan.strategy || "{}"));
 
   // get all batches belonging to this plan  
-  let batches = await getBatchesByPlan(planUid, { states: [WAITING, DONE]});
+  let batches = await getBatchesByPlan(plan.uid, { states: [WAITING, DONE]});
 
-  for (let j=0; j < (batches || []).length; j++) {
-    await dispatchBatchVotes(batches[j], plan); 
+  for (let k=0; k < (batches || []).length; k++) {
+    let batch = batches[k];
+
+    // votes in the batch
+    let unpacked = JSON.parse(batch.signedData);
+    let votes: SignedVote[] = unpacked.votes;
+
+    for (let j=0; j < votes.length; j++) {
+      let vote = votes[j];
+      let txn = await postSendClaimVote({
+        claimUid: vote.claimUid,
+        planUid: plan.uid,
+        batchUid: batch.uid,
+        electorId: batch.signerAccountId,
+        index: j,
+        result: vote.result
+      })
+    }
+
     await delay(1000);
   }
 }
-
-
-/**
- * Dispatchs all votes in a given batch to the zkApp using the Sequencer
- * Before dispatching the votes we must verify the signed data.
- * @param batch 
- * @param plan 
- */
-
-async function dispatchBatchVotes(
-  batch: any,
-  plan: any
-) {
-  // check signature and decrypt data
-  // $TODO$
-
-  // votes in the batch
-  let votes: SignedVote[] = JSON.parse(batch.signedData || "[]");
-
-  for (let j=0; j < votes.length; j++) {
-    let vote = votes[j];
-    Sequencer.postTransaction(`claim-${vote.claimUid}`, {
-      type: 'SEND_CLAIM_VOTE',
-      data: {
-        planUid: plan.uid,
-        batchUid: batch.uid,
-        claimUid: vote.claimUid,
-        electorAccountId: batch.signerAccountId,
-        index: j,
-        vote: vote.result
-      }
-    })
-  }
-}
-
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
