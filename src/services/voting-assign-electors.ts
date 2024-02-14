@@ -151,6 +151,21 @@ async function assignAllElectors(planUid: string) {
       state: VOTING
     });
     claim = result.proved;
+
+    // if we don't have a created MINA zkApp account for this Claim
+    // we need to create it by dispatching the transaction 
+    if (!claim.accountId) {
+      let txn = await Sequencer.postTransaction(`claim-${claim.uid}`, {
+        type: 'CREATE_CLAIM_VOTING_ACCOUNT',
+        data: {
+          claimUid: claim.uid,
+          strategy: {
+            requiredPositives: planStrategy.minPositives,
+            requiredVotes: planStrategy.minVotes
+          }
+        }
+      })
+    }
   }
 
   // we must store the updated Nullifier
