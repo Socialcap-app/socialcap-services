@@ -13,6 +13,7 @@ export interface SignedData {
 export interface SignedVote {
   uid: string, // the taskUid
   claimUid: string,
+  claimAccountId: string,
   assigneeUid: string,
   communityUid: string,
   planUid: string
@@ -31,8 +32,10 @@ export async function createVotesBatch(params: {
 }): Promise<any> {
 
   // retrieve and parse received signed data
-  let data = params.signedData.data || "[]";
-  let votes = JSON.parse(data) as SignedVote[];
+  let unpacked = JSON.parse(params.signedData.data.split('data:')[1]);
+  let votes = (unpacked.votes || []) as SignedVote[];
+  let root = unpacked.root;
+
   if (! votes.length) 
     // we just ignore this batch, because it has no votes
     return null;
@@ -56,7 +59,7 @@ export async function createVotesBatch(params: {
     signatureField: params.signedData.signature.field,
     signatureScalar: params.signedData.signature.scalar,
     size: votes.length,
-    commitment: "", // initially it is empty
+    commitment: root, // the root of the BatchVote nullifier
     state: WAITING, // we wait for the sequencer to process it
     // submitedUTC @default(now()) // Db assigns the now UTC 
   }})

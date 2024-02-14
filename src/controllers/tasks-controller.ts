@@ -127,15 +127,17 @@ export async function submitTask(params: {
  */
 export async function submitTasksBatch(params: {
   senderAccountId: string,
-  signedData: any,
+  signedPack: any,
   extras?: { addToQueue: boolean }
   user: any,
 }) {
-  let { senderAccountId, signedData } = params;
+  let { senderAccountId, signedPack } = params;
   let { addToQueue } = params.extras || { addToQueue: true };
 
-  console.log(signedData);
-  let votes = JSON.parse(signedData.data || "[]") as any[];
+  console.log(signedPack);
+  let unpacked = JSON.parse(signedPack.data.split('data:')[1]);
+  let votes = unpacked.votes || [];
+  let root = unpacked.root;
 
   let tasks = [];
   let leafs: { value: Field }[] = [];
@@ -162,15 +164,21 @@ export async function submitTasksBatch(params: {
     )})
   }
 
+  // create the BatchVote Nullifier
+  let nullifier = new BatchVoteNullifier().addLeafs(leafs);
+
+  // assert root is same as signed and submitted
+  if (root != nullifier.root().toString())
+    return hasError.PreconditionFailed(`Submitted batch root does not match the signed data merkle root`)
+
   // create and save the Batch for processing
   let batch = await createVotesBatch({
     senderAccountId: params.senderAccountId,
-    signedData: params.signedData
+    signedData: signedPack
   });
   logger.info(`VotesBatch created uid=${batch.uid} sequence=${batch.sequence} size=${batch.size} state=${batch.state}`);
 
-  // create the BatchVote Nullifier and save it
-  let nullifier = new BatchVoteNullifier().addLeafs(leafs);
+  // save Nullifier
   await saveJSON<BatchVoteNullifier>(`batch-vote-nullifier-${batch.uid}`, nullifier);
   logger.info(`BatchVoteNullifier created uid=${batch.uid} root=${nullifier.root()}`);
 
@@ -180,13 +188,13 @@ export async function submitTasksBatch(params: {
     data: {
       batchUid: batch.uid,
       senderAccountId: params.senderAccountId,
-      signedData: params.signedData      
+      signedData: signedPack      
     }
   })
 
   return hasResult({
     tasks: tasks,
-    transaction: { id: txn.uid } // { id: params.txn?.hash || "" }
+    transaction: { uid: txn.uid } // { id: params.txn?.hash || "" }
   })
 }
 
