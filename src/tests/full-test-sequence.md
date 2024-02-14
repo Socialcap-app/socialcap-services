@@ -1,10 +1,11 @@
 # End to end testing for the voting process
 
-## Prepare Level 0 database (testdb-L0)
+## Level 0 database (testdb-L0)
 
 We need to prepare the starting point Db that will be used for testing.
 
 **1. Prepare claim data for TEST_PLAN_UID='8a940b4b26404391ac416429a27df64c'**
+
 ~~~
 SELECT uid, state, state_descr, applicant, applicant_uid, community, community_uid, plan_uid, plan, created_utc, updated_utc, positive_votes, negative_votes, ignored_votes
 FROM claims_view
@@ -62,7 +63,9 @@ $ ./run/dump-testdb.sh L0
 
 Tests Claim submissions and creation of ClaimVotingAccounts.
 
-Uses: `testdb-L0`
+- Input: `testdb-L0`
+
+- Output: `testdb-L1`
 
 **1. Restore the testdb-L0 for testing**
 
@@ -97,7 +100,8 @@ $ sudo login socialcap
 
 Testing the start of the voting process and assign judges to it.
 
-Uses: `testdb-L1`
+- Input: `testdb-L1`
+- Output: `testdb-L2`
 
 **1. Restore the testdb-L1 for testing**
 
@@ -115,6 +119,7 @@ $ ./run/restore-testdb.sh L1
 ~~~
 
 **3. Run the tests: Start voting and assign judges**
+
 ~~~
 node build/src/tests/run-start-and-assign-judges.ts
 ~~~
@@ -127,13 +132,16 @@ $ sudo login socialcap
 ~~~
 ---
 
-## Level 3:
+## Level 3
 
 Testing the submissions of votes from judges.
 
-Uses: `testdb-L2`
+- Input: `testdb-L2`
+
+- Output: `testdb-L3`
 
 **1. Restore the testdb-L2 for testing**
+
 ~~~
 $ sudo login socialcap
 $ ./run/restore-testdb.sh L2
@@ -149,11 +157,29 @@ $ ./run/restore-testdb.sh L2
 ~~~
 
 **3. Submit voting batches by judges** 
-~~~
-node build/src/tests/run-submit-batches-from-judges.ts
-~~~
 
-**4. Dump the prepared Db to testdb-L3** 
+We do this manually using the app itself. We log in as each one of the 3 judges:
+
+- mazito.v2+030@gmail.com
+
+- mazito.v2+031@gmail.com
+- mazito.v2+032@gmail.com
+
+And submit the votes there.
+
+**4. Close voting**
+
+We do this with the app itself. Login as user:
+
+- mazito.v2@gmail.com (is Admin)
+
+Using the Admined page and Voting tab:
+
+- The state must be VOTING
+- We close the voting
+- Final state will be Tallying
+
+**5. Dump the prepared Db to testdb-L3** 
 
 ~~~
 $ sudo login socialcap
@@ -165,7 +191,9 @@ $ sudo login socialcap
 
 Tests the dispatch of votes and calculation of results.
 
-Uses: `testdb-L3`
+- Input: `testdb-L3`
+
+- Output: `testdb-L4`
 
 **1. Restore the testdb-L3 for testing**
 
@@ -183,13 +211,22 @@ $ ./run/restore-testdb.sh L3
 ./run-dispatcher.sh 3082
 ~~~
 
-**3. Stop voting and dispatch votes**
+**3. Start tally**
 
-~~~
-node build/src/tests/run-stop-voting-dispatch-votes.ts
-~~~
+Now we can Start the tally that will dispatch the votes. 
 
-**4. Dump the prepared Db to testdb-L4** 
+We do this with the app itself. Login as user:
+
+- mazito.v2@gmail.com (is Admin)
+
+Using the Admined page and Voting tab:
+
+- The state must be TALLYING
+- Use button "Start Tally !"
+
+
+
+**5. Dump the prepared Db to testdb-L4** 
 
 ~~~
 $ sudo login socialcap
