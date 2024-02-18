@@ -2,4 +2,4 @@
 
 npm run build
 
-node build/src/main-dispatchers.js $1
+node build/src/main-dispatcher.js $1

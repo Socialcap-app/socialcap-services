@@ -92,10 +92,11 @@ fastify.post('/on-failure/:name', async (request, reply) => {
 let args = process.argv.slice(2);
 const PORT = Number(args[0]);
 
-Mina.setActiveInstance(Mina.Network({
-  mina: process.env.MINA_GRAPHQL as string, 
+let Network = Mina.Network({
+  mina: process.env.MINA_PROXY as string, 
   archive: process.env.MINA_ARCHIVE as string
-}));
+});
+Mina.setActiveInstance(Network);
 
 setupDispatchers([
   (new CreateClaimVotingAccountDispatcher()),
@@ -108,8 +109,9 @@ fastify.listen({ port: PORT }, (err, address) => {
     process.exit(1);
   }
   logger.info(`Dispatcher listening at ${address}`);
-  logger.info(`MINA graphql=${process.env.MINA_GRAPHQL}`);
+  logger.info(`MINA proxy=${process.env.MINA_PROXY}`);
   logger.info(`MINA archive=${process.env.MINA_ARCHIVE}`);
+  logger.info(`MINA id=${Network.getNetworkId()}`);
 
   // we need the Db to be ready before we can do this
   merkleStorage.startup();
