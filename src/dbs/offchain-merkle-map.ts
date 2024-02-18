@@ -7,7 +7,8 @@
 import { Field, MerkleMap, MerkleMapWitness, UInt32 } from "o1js"
 import { logger, prisma } from "../global.js";
 import { ResultOrError, hasError, hasResult } from "../responses.js";
-import { UID, MerkleMapUpdate, LeafInstance } from "@socialcap/contracts";
+import { UID } from "@socialcap/contracts-lib";
+import { MerkleMapUpdate, LeafInstance } from "@socialcap/collections";
 
 export { OffchainMerkleMap };
 

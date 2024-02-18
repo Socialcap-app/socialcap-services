@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import axios from "axios";
 import { TxnResult } from "./transaction-queues.js";
 import { SequencerLogger as log } from "./logs.js";
@@ -19,8 +20,8 @@ export {
  * @throws does not throw, allways returns a TxnResult
 */
 const INTERVAL = 10000; // every 10 secs
-const MAX_RETRIES = 200; 
-const GRAPHQL_ENDPOINT =  "https://berkeley.graphql.minaexplorer.com/";
+const MAX_RETRIES = 1000; 
+const GRAPHQL_ENDPOINT = String(process.env.MINA_GRAPHQL);
 
 async function waitForTransaction(
   txnId: string
@@ -101,6 +102,7 @@ async function queryTxnStatus(txnId: string): Promise<any> {
       }\n}`,
       "variables":null
     };    
+    //console.log(`payload=`,payload);
 
     const response = await axios.post(url, payload, { ...headers });
     // expected 
@@ -115,9 +117,9 @@ async function queryTxnStatus(txnId: string): Promise<any> {
     },
     "error": null
     */
+    //console.log("axios response=", response.data);
    
     const answer = response.data?.data?.zkapp;
-    //console.log("queryTxnStatus rsp=", answer);
     return {
       data: answer,
       error: null,

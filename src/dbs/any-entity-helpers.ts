@@ -5,11 +5,12 @@ import {
   ClaimPartialSchema, CredentialPartialSchema, PlanPartialSchema, 
   TaskPartialSchema 
 } from "../../prisma/generated/zod/index.js";
+import { UID } from "@socialcap/contracts-lib";
 import { 
   LeafInstance, MerkleMapProxy, MerkleMapUpdate, ProvableCommunity, ProvableMember, 
   ProvablePerson, ProvableClaim, ProvablePlan, ProvableCredential, ProvableTask,
-  UID, ProvableElector
-} from "@socialcap/contracts";
+  ProvableElector
+} from "@socialcap/collections";
 
 import { raiseError } from "../responses.js";
 import { OffchainMerkleStorage } from "./offchain-merkle-storage.js";

@@ -161,7 +161,6 @@ $ ./run/restore-testdb.sh L2
 We do this manually using the app itself. We log in as each one of the 3 judges:
 
 - mazito.v2+030@gmail.com
-
 - mazito.v2+031@gmail.com
 - mazito.v2+032@gmail.com
 

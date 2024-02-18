@@ -13,7 +13,7 @@ export { SendClaimVoteDispatcher };
 
 class SendClaimVoteDispatcher extends AnyDispatcher {
 
-  static uname = 'SEND_CLAIM_VOTES';
+  static uname = 'SEND_CLAIM_VOTE';
 
   name(): string { 
     return SendClaimVoteDispatcher.uname; 

@@ -3,7 +3,7 @@
  * Ideally, we should use something like NATS.io for this.
  */
 import { prisma } from "../../global.js";
-import { WAITING, DONE } from '@socialcap/contracts';
+import { WAITING, DONE } from "@socialcap/contracts-lib";
 import { SequencerLogger as log } from "./logs.js";
 
 export { 

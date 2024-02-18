@@ -3,10 +3,8 @@
  * It implements the basic helper methods to be used by this derived classes.
  */
 import axios, { AxiosResponse } from 'axios';
-import { PrivateKey, PublicKey, Mina } from "o1js";
 import { RawTxnData, TxnResult } from "./transaction-queues.js";
 import { waitForTransaction } from "./wait-for-transaction.js";
-import { TxnEvent, postTxnEvent } from "./transaction-events.js";
 import { SequencerLogger as log } from "./logs.js";
 import { Sender } from "./senders-pool.js";
 

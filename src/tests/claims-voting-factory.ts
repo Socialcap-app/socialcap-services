@@ -1,5 +1,5 @@
 import { PrivateKey, PublicKey, Mina, Field, AccountUpdate, fetchAccount } from "o1js";
-import { ClaimVotingContract } from "@socialcap/contracts";
+import { ClaimVotingContract } from "@socialcap/claim-voting";
 import { checkTransaction } from "./test-helpers.js";
 
 export { ClaimsVotingFactory, VotingInstance };

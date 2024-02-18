@@ -1,5 +1,5 @@
-import { UID } from "@socialcap/contracts";
-//import { CLAIMED, WAITING, UNPAID, VOTING } from "@socialcap/contracts";
+import { UID } from "@socialcap/contracts-lib";
+//import { CLAIMED, WAITING, UNPAID, VOTING } from "@socialcap/collections";
 import { fastify, prisma, logger } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 // import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";

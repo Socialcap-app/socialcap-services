@@ -16,7 +16,7 @@ class Sequencer {
   // for a given type. There is one (and only one) Dispatcher per type.
   private static _dispatchers = new Map<string, DispatcherProxy>;
 
-  private static RETRY_DELAY = 15000; // 15 secs
+  private static RETRY_DELAY = 60000; // 60 secs
 
   public static getQueue(name: string): TransactionsQueue {
     return Sequencer._queues.get(name) as TransactionsQueue;
@@ -102,8 +102,13 @@ class Sequencer {
     sender: Sender
   ) {
     const dispatcher = Sequencer.getDispatcher(txn.type);
-    if (! dispatcher)
-      return; // No dispatcher for this type, cant do anything
+
+    // No dispatcher for this type, cant do anything
+    if (! dispatcher) {
+      log.error(`Sequencer.dispatch No dispatcher for this type=${txn.type}`)
+      SendersPool.freeSender(queue.name());
+      return; 
+    }
     
     // now we can dispatch
     log.info(`Sequencer.dispatch queue=${sender.queue} worker=${sender.workerUrl} txn=${JSON.stringify(txn)}`)
@@ -191,27 +196,26 @@ class Sequencer {
         // check if we have FULLY FAILED 
         if (result?.error && sender.retries >= MAX_RETRIES) {
           // we dont have any retries left !
+          SendersPool.freeSender(queue.name());
           let failedTxn = await queue.closeFailedTransaction(txn.uid, result);
-          failedTxn.data = JSON.parse(failedTxn.data);
           await dispatcher.onFailure({
               uid: failedTxn.uid,
               type: failedTxn.type,
               data: JSON.parse(failedTxn.data)
             }, result, sender
           );
-          SendersPool.freeSender(queue.name());
           return;
         }
 
         // we are DONE !
         let doneTxn = await queue.closeSuccessTransaction(txn.uid, result);
+        SendersPool.freeSender(queue.name());
         await dispatcher.onSuccess({
             uid: doneTxn.uid,
             type: doneTxn.type,
             data: JSON.parse(doneTxn.data)
           }, result, sender
         );
-        SendersPool.freeSender(queue.name());
         return;
       }); 
     }

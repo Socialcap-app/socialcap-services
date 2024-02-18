@@ -1,5 +1,6 @@
 import { fastify, prisma } from "../global.js";
-import { UID, PersonState } from "@socialcap/contracts"
+import { UID } from "@socialcap/contracts-lib"
+import { PersonState } from "@socialcap/collections"
 import { i18n as _ } from "../i18n/messages.js";
 import { hasError, hasResult } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";

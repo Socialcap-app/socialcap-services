@@ -51,17 +51,18 @@
     "@fastify/jwt": "^7.0.0",
     "@fastify/routes": "^5.1.0",
     "@prisma/client": "^5.0.0",
-    "@socialcap/batch-voting": "^0.1.4",
-    "@socialcap/claim-voting": "^0.1.2",
+    "@socialcap/batch-voting": "^0.1.6",
+    "@socialcap/claim-voting": "^0.1.4",
+    "@socialcap/collections": "^0.1.31",
     "@socialcap/contracts": "^0.1.30",
-    "@socialcap/contracts-lib": "^0.1.15",
+    "@socialcap/contracts-lib": "^0.1.17",
     "axios": "^1.4.0",
     "fastify": "^4.26.0",
     "form-data": "^4.0.0",
     "lmdb": "^2.9.2",
     "mailgun": "^0.5.0",
     "mailgun.js": "^10.1.0",
-    "o1js": "^0.14.2",
+    "o1js": "^0.16.0",
     "pino-pretty": "^10.3.1"
   }
 }

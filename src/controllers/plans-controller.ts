@@ -6,6 +6,7 @@ import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 import { getMasterPlan, changeMasterPlanState } from "../dbs/plan-helpers.js";
 import { assignAllElectors } from "../services/voting-assign-electors.js";
 import { closeAllVoting } from "../services/voting-close-voting.js";
+import { processVotesBatches, TallyProcessResult } from "../services/voting-process-votes.js";
 
 
 export async function getPlan(params: any) {
@@ -204,10 +205,15 @@ export async function startTally(params: {
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the TALLYING state. We can not start counting votes.`)
 
   // COUNT VOTES HERE !!!
+  let done = await processVotesBatches(plan) as TallyProcessResult;
 
   let rs = await changeMasterPlanState(plan.uid, TALLYING);
-  return hasResult(rs)
+  return hasResult({
+    plan: rs,
+    processed: done
+  })
 }
+
 
 export async function closeTally(params: {
   planUid: string
@@ -220,7 +226,6 @@ export async function closeTally(params: {
   let rs = await changeMasterPlanState(plan.uid, DONE);
   return hasResult(rs)
 }
-
 
 /**
  * Issue all credentials approved in the plan.

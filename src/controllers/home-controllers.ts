@@ -1,4 +1,4 @@
-import { UID } from "@socialcap/contracts";
+import { UID } from "@socialcap/contracts-lib";
 import { fastify, prisma } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";

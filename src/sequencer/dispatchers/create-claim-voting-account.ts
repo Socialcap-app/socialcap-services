@@ -1,4 +1,4 @@
-import { Mina, AccountUpdate, PrivateKey, PublicKey, Field } from "o1js";
+import { Mina, AccountUpdate, PrivateKey, PublicKey, Field, fetchAccount } from "o1js";
 import { ClaimVotingContract } from "@socialcap/claim-voting";
 import { UID } from "@socialcap/contracts-lib";
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
@@ -39,6 +39,8 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
       data: {}, hash: "",
       error: hasException(NO_FEE_PAYER_AVAILABLE, { accountId: sender.accountId })
     }
+
+    let hasAccount = await fetchAccount({ publicKey: deployer.publicKey });
 
     // we ALWAYS compile it
     await ClaimVotingContract.compile();

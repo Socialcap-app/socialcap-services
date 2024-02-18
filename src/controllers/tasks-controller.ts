@@ -1,6 +1,5 @@
 import { PublicKey, Field } from "o1js";
-import { NullifierProxy, UID } from "@socialcap/contracts";
-import { CANCELED,ASSIGNED,DONE,IGNORED } from "@socialcap/contracts-lib";
+import { UID, CANCELED,ASSIGNED,DONE,IGNORED } from "@socialcap/contracts-lib";
 import { BatchVoteNullifier, BatchVoteNullifierLeaf } from "@socialcap/batch-voting";
 import { fastify, prisma, logger } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
@@ -105,11 +104,11 @@ export async function submitTask(params: {
   */
   if (! addToQueue) {
     // we need to also update the Nullifier !
-    let key: Field = NullifierProxy.key(
-      PublicKey.fromBase58(params.senderAccountId),
-      UID.toField(params.claimUid)
-    )
-    let state: Field = Field(DONE);
+    // let key: Field = NullifierProxy.key(
+    //   PublicKey.fromBase58(params.senderAccountId),
+    //   UID.toField(params.claimUid)
+    // )
+    // let state: Field = Field(DONE);
   }
 
   return hasResult({

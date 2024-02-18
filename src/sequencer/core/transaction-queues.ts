@@ -2,7 +2,7 @@
  * Manages storage and retrieval of the Transactions Queue involving MINA
  */
 import { prisma } from "../../global.js";
-import { UID } from '@socialcap/contracts';
+import { UID } from "@socialcap/contracts-lib";
 import { SequencerLogger as log } from "./logs.js";
 import { IError } from "./error-codes.js";
 

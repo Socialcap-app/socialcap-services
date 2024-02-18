@@ -4,11 +4,18 @@ import { SignedData } from "./batch-helpers.js";
 export {
   RawTxnData,
   TxnResult,
+  SubmittedTxn,
   postReceiveVotesBatch,
   postCommitAllBatches,
   postCreateClaimVotingAccount,
   postSendClaimVote
 }
+
+interface SubmittedTxn {
+  type: string;
+  uid: string;
+}
+
 
 async function postReceiveVotesBatch(
   batchUid: string,
