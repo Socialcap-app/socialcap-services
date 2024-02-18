@@ -6,8 +6,9 @@ import fastifyJwt from "@fastify/jwt";
 import cors from '@fastify/cors'
 
 import {
+  loadPayers,
   CreateClaimVotingAccountDispatcher,
-  SendClaimVoteDispatcher
+  SendClaimVoteDispatcher,
 } from "./sequencer/dispatchers/index.js"
 
 const AllDispatchers = new Map<string, any>;
@@ -112,6 +113,9 @@ fastify.listen({ port: PORT }, (err, address) => {
   logger.info(`MINA proxy=${process.env.MINA_PROXY}`);
   logger.info(`MINA archive=${process.env.MINA_ARCHIVE}`);
   logger.info(`MINA id=${Network.getNetworkId()}`);
+
+  // preload available Payer accounts from .env
+  loadPayers();
 
   // we need the Db to be ready before we can do this
   merkleStorage.startup();

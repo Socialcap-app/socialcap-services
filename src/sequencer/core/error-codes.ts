@@ -32,6 +32,11 @@ export const NO_FEE_PAYER_AVAILABLE = {
   message: "There is no fee payer with this account publicKey.",
 }
 
+export const ACCOUNT_NOT_FOUND = {
+  code: UNRESOLVED_ERROR,
+  message: "The account has not been found in the MINA network.",
+}
+
 export const PREPARE_TRANSACTION_FAILED = {
   code: UNRESOLVED_ERROR,
   message: "Trying to prepare the transaction failed. This is an irrecoverable error.",

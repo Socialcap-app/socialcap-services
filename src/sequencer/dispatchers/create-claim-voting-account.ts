@@ -5,7 +5,7 @@ import { DEPLOY_TX_FEE } from "./standard-fees.js";
 import { AnyPayer, findPayer } from "./payers.js";
 import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
 import { updateClaimAccountId } from "../../dbs/claim-helpers.js";
-import { hasException, NO_FEE_PAYER_AVAILABLE } from "../core/error-codes.js";
+import { ACCOUNT_NOT_FOUND, hasException, NO_FEE_PAYER_AVAILABLE } from "../core/error-codes.js";
 
 export { CreateClaimVotingAccountDispatcher };
 
@@ -33,14 +33,10 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
     log.info(`Start dispatching task ${JSON.stringify(txnData)}`);
     const { claimUid, strategy } = txnData.data;
 
-    // find the Deployer secret keys using the sender addresss
-    const deployer = findPayer(sender.accountId);
-    if (!deployer) return {
-      data: {}, hash: "",
-      error: hasException(NO_FEE_PAYER_AVAILABLE, { accountId: sender.accountId })
-    }
-
-    let hasAccount = await fetchAccount({ publicKey: deployer.publicKey });
+    // find the Deployer using the sender addresss
+    const [deployer, error] = await findPayer(sender.accountId);
+    if (!deployer) 
+      return error;
 
     // we ALWAYS compile it
     await ClaimVotingContract.compile();
