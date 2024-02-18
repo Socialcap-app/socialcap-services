@@ -14,7 +14,8 @@ import { logger } from './global.js';
 let WORKERS = [];
 let basePort = Number(process.env.WORKERS_BASE_PORT);
 let baseUrl = String(process.env.WORKERS_BASE_URL);
-for (let j=0; j < 1; j++) {
+let activeWorkers = Number(process.env.WORKERS_ACTIVE);
+for (let j=0; j < activeWorkers; j++) {
   let port = String(basePort+(j+1))
   let key = 'WORKER_'+(String(j+1).padStart(2, '0')); 
   let [pk,sk] = String(process.env[key]).split(',');

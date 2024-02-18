@@ -19,28 +19,29 @@ interface AnyPayer {
   privateKey: PrivateKey;
 }
 
-// build the Payers list from the Environment settings
-const Payers: any = {
-  'DEPLOYER': {
-    address: DEPLOYER_ID,
-    publicKey: PublicKey.fromBase58(DEPLOYER_ID),
-    privateKey: PrivateKey.fromBase58(DEPLOYER_KEY)
-  },
+// build the Payers dictio from the Environment settings
+const Payers: any = {};
 
-  'SENDER1': {
-    address: SENDER_ID,
-    publicKey: PublicKey.fromBase58(SENDER_ID),
-    privateKey: PrivateKey.fromBase58(SENDER_KEY)
-  }
+let basePort = Number(process.env.WORKERS_BASE_PORT);
+let activeWorkers = Number(process.env.WORKERS_ACTIVE);
+for (let j=0; j < activeWorkers; j++) {
+  let keys = 'WORKER_'+(String(j+1).padStart(2, '0')); 
+  let [pk,sk] = String(process.env[keys]).split(',').map(t => t.trim());
+
+  Payers[pk] = {
+    address: pk,
+    publicKey: PublicKey.fromBase58(pk),
+    privateKey: PrivateKey.fromBase58(sk)
+  };
 }
 
-
 function findPayer(address: string): AnyPayer | null {
-  let keys = Object.keys(Payers) || [];
-  for (let j=0; j < keys.length; j++) {
-    let payer = Payers[keys[j]];
-    if (payer.address === address)
-      return payer;
-  }
-  return null;
+  return Payers[address] as AnyPayer || null;
+  // let keys = Object.keys(Payers) || [];
+  // for (let j=0; j < keys.length; j++) {
+  //   let payer = Payers[keys[j]];
+  //   if (payer.address === address)
+  //     return payer;
+  // }
+  // return null;
 }

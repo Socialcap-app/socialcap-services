@@ -55,7 +55,7 @@ export class SequencerLogger {
 
   static waitingTransaction(hash: string, elapsed: number, done: any) {
     logger.info(
-      `Dispatcher.waitForInclusion, txn ${elapsed}secs hash=${hash} done=${!!done}`
+      `Dispatcher.waitForInclusion ts=${elapsed}secs hash=${hash} done=${!!done}`
       +(done ? ` ${JSON.stringify(done)}` : "")
     );
   }
