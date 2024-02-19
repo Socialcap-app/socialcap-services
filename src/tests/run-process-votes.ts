@@ -1,0 +1,28 @@
+import { merkleStorage } from "../global.js";
+import { TALLYING } from "@socialcap/contracts-lib";
+import { getMasterPlan, changeMasterPlanState } from "../dbs/plan-helpers.js";
+import { processVotesBatches, TallyProcessResult } from "../services/voting-process-votes.js"
+
+// the test plan in testdb0
+// MINA Navigators
+const TEST_PLAN_UID = '8a940b4b26404391ac416429a27df64c';
+
+async function run(planUid: string) {
+
+  let plan = await getMasterPlan(planUid) ;
+
+  // COUNT VOTES HERE !!!
+  let done = await processVotesBatches(plan) as TallyProcessResult;
+  console.log(done);
+
+  // let rs = await changeMasterPlanState(plan.uid, TALLYING);
+}
+
+// start the Db
+merkleStorage.startup();
+
+// we need the Db to be ready before we can do anything
+// so we make it wait for 10000 secs before running
+setTimeout(async () => {
+  await run(TEST_PLAN_UID); 
+}, 5000);

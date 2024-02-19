@@ -1,12 +1,13 @@
-import { Mina, AccountUpdate, PrivateKey, PublicKey, Field } from "o1js";
+import { PrivateKey, PublicKey, Field, fetchAccount } from "o1js";
 import { ClaimElectorNullifier, ClaimElectorNullifierLeaf, ClaimVotingContract } from "@socialcap/claim-voting";
 import { DONE, UID } from "@socialcap/contracts-lib";
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
-import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
-import { OffchainMerkleStorage } from "../../dbs/offchain-merkle-storage.js";
 import { getClaim } from "../../dbs/claim-helpers.js";
 import { BatchVoteNullifier } from "@socialcap/batch-voting";
 import { getJSON } from "../../dbs/nullifier-helpers.js";
+import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
+import { AnyPayer, findPayer } from "./payers.js";
+import { ACCOUNT_NOT_FOUND, hasException, NO_FEE_PAYER_AVAILABLE } from "../core/error-codes.js";
 
 export { SendClaimVoteDispatcher };
 
@@ -42,24 +43,28 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
       vote, // +1, -1, 0 (encrypted with sender Puk ?)
     } = txnData.data;
 
-    console.log("Sender ", sender.accountId);
-    const deployer = {
-      address: sender.accountId,
-      publicKey: PublicKey.fromBase58(sender.accountId),
-      privateKey: PrivateKey.fromBase58(sender.secretKey)
-    };
+    // this data was send by postTransaction
+    log.info(`Start dispatching task ${JSON.stringify(txnData)}`);
+
+    // find the Deployer secret keys using the sender addresss
+    // find the Deployer using the sender addresss
+    const [deployer, error] = await findPayer(sender.accountId);
+    if (!deployer) 
+      return error;
 
     const claimUidf = UID.toField(claimUid);
     const electorPuk = PublicKey.fromBase58(electorAccountId);
 
     // use the batchUid to get the BatchNullifier
-    let batchNullifier = await getJSON<BatchVoteNullifier>(`batch-${batchUid}`, 
+    let batchNullifier = await getJSON<BatchVoteNullifier>(
+      `batch-vote-nullifier-${batchUid}`, 
       new BatchVoteNullifier()
     ) as BatchVoteNullifier;
     const batchRoot = batchNullifier.root();
-    const batchWitness = batchNullifier.witness(index);
+    const batchWitness = batchNullifier.witness(BigInt(index));
 
-    let claimNullifier = await getJSON<ClaimElectorNullifier>(`claim-${claimUid}`, 
+    let claimNullifier = await getJSON<ClaimElectorNullifier>(
+      `claim-elector-nullifier-${claimUid}`, 
       new ClaimElectorNullifier()
     ) as ClaimElectorNullifier;
     const claimRoot = claimNullifier.root();
@@ -72,7 +77,7 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
 
     // get the claim and check we akready have a zkApp binded to it
     const claim = await getClaim(claimUid);
-    if (!claim!.accountId) {
+    if (! claim!.accountId) {
       return {
         error: {}
       }
@@ -99,11 +104,7 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
       [deployer.privateKey]  // sign keys
     );
 
-    result.data = {
-      claimUid: claimUid,
-      nullifierKey: Field(0),
-      voted: DONE
-    }
+    result.data = txnData.data;
     return result;
   }
 
