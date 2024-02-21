@@ -24,3 +24,16 @@ export async function changeAssignedTasksStateByPlan(
   });
   return (allAssigned || []).length;
 }
+
+export async function getTasksByPlan(planUid: string, params: {
+  states: number[]
+}) {
+  const tasks = await prisma.task.findMany({
+    where: { AND: [
+      { planUid: { equals: planUid }},
+      { state: { in: params.states || [] }}
+    ]},
+    orderBy: { assignedUTC: 'desc' }
+  })
+  return tasks || [];
+}

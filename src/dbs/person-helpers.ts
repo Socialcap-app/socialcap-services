@@ -30,3 +30,12 @@ export async function updatePersonOrRaise(
   if (!p) raiseError.DatabaseEngine(`Update person ${uid} failed`);
   return p as Person;
 }
+
+export async function getPersonsWithAccount() {
+  const persons = await prisma.person.findMany({
+    where: { 
+      accountId: { not: "" }
+    }
+  })
+  return persons || [];
+}

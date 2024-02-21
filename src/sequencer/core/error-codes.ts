@@ -8,8 +8,10 @@ export interface IError {
 
 // These play a role similar to HTTP Errors, and categorize the more
 // specific errors 
-export const UNRESOLVED_ERROR = 500; // Internal server error
-export const WORKER_ERROR = 502; // Bad gateway
+export const 
+  NOT_FOUND = 404,
+  UNRESOLVED_ERROR = 500, // Internal server error
+  WORKER_ERROR = 502; // Bad gateway
 
 /** Builds the error code adding the received exception to it */
 export function hasException(error: IError, except?: any): IError {
