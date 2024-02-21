@@ -1,15 +1,57 @@
-import { PrivateKey, PublicKey, Field, fetchAccount } from "o1js";
+import { PrivateKey, PublicKey, Field, fetchAccount, MerkleMapWitness } from "o1js";
+import { DONE, UID, ASSIGNED, sliced } from "@socialcap/contracts-lib";
 import { ClaimElectorNullifier, ClaimElectorNullifierLeaf, ClaimVotingContract } from "@socialcap/claim-voting";
-import { DONE, UID } from "@socialcap/contracts-lib";
+import { BatchVoteNullifierWitness, BatchVoteNullifier, BatchVoteNullifierLeaf } from '@socialcap/batch-voting';
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
 import { getClaim } from "../../dbs/claim-helpers.js";
-import { BatchVoteNullifier } from "@socialcap/batch-voting";
 import { getJSON } from "../../dbs/nullifier-helpers.js";
 import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
 import { AnyPayer, findPayer } from "./payers.js";
-import { ACCOUNT_NOT_FOUND, hasException, NO_FEE_PAYER_AVAILABLE } from "../core/error-codes.js";
+import { UNRESOLVED_ERROR, NOT_FOUND, hasException } from "../core/error-codes.js";
 
 export { SendClaimVoteDispatcher };
+
+
+function assertHasNotVoted(
+  electorPuk: PublicKey,
+  claimUid: Field,
+  nullifierRoot: Field,
+  nullifierWitness: MerkleMapWitness
+) {
+  // compute a root and key from the given Witness using the only valid 
+  // value ASSIGNED, other values indicate that the elector was 
+  // never assigned to this claim or that he has already voted on it
+  const [witnessRoot, witnessKey] = nullifierWitness.computeRootAndKey(
+    Field(ASSIGNED) /* WAS ASSIGNED BUT NOT VOTED YET */
+  );
+  console.log("witnessRoot", witnessRoot.toString());
+  console.log("witnessKey", witnessKey.toString());
+
+  const key: Field = ClaimElectorNullifierLeaf.key(electorPuk, claimUid);
+  console.log("claimUid", claimUid.toString());
+  console.log("electorPuk", electorPuk.toBase58());
+  console.log("nullifierKey", key.toString());
+  console.log("nullifierRoot", nullifierRoot.toString());
+
+  // check the witness obtained root matchs the Nullifier root
+  nullifierRoot.assertEquals(witnessRoot, "Invalid elector root or already voted") ;
+
+  // check the witness obtained key matchs the elector+claim key 
+  witnessKey.assertEquals(key, "Invalid elector key or already voted");
+}
+
+function assertIsInBatch(
+  electorPuk: PublicKey,
+  claimUid: Field,
+  vote: Field,
+  batchRoot: Field,
+  batchWitness: BatchVoteNullifierWitness
+) {
+  let leafValue = BatchVoteNullifierLeaf.value(electorPuk, claimUid, vote);
+  let recalculatedRoot = batchWitness.calculateRoot(leafValue);
+  console.log(`assertBatch=${batchRoot.toString() === recalculatedRoot.toString()} batchRoot=${sliced(batchRoot.toString())} recalculatedRoot=${sliced(recalculatedRoot.toString())}`);
+  recalculatedRoot.assertEquals(batchRoot);  
+}
 
 
 class SendClaimVoteDispatcher extends AnyDispatcher {
@@ -52,10 +94,18 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
     if (!deployer) 
       return error;
 
-    const claimUidf = UID.toField(claimUid);
+    // get the claim and check we akready have a zkApp binded to it
+    const claim = await getClaim(claimUid);
+    if (! claim!.accountId) return {
+      error: hasException({
+        code: UNRESOLVED_ERROR,
+        message: `Claim ${claimUid} has no associated zkApp account`
+      })
+    }
+
     const electorPuk = PublicKey.fromBase58(electorAccountId);
 
-    // use the batchUid to get the BatchNullifier
+    // vote in batch Nullifier
     let batchNullifier = await getJSON<BatchVoteNullifier>(
       `batch-vote-nullifier-${batchUid}`, 
       new BatchVoteNullifier()
@@ -63,30 +113,43 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
     const batchRoot = batchNullifier.root();
     const batchWitness = batchNullifier.witness(BigInt(index));
 
+    console.log(`batch vote index=${index} vote=${vote}`);  
+    assertIsInBatch(
+      electorPuk, UID.toField(claimUid), Field(vote),
+      batchRoot, batchWitness
+    );
+
+    // claim and elector Nullifier AHORA !  
     let claimNullifier = await getJSON<ClaimElectorNullifier>(
-      `claim-elector-nullifier-${claimUid}`, 
+      `claim-elector-nullifier-${planUid}`, 
       new ClaimElectorNullifier()
     ) as ClaimElectorNullifier;
     const claimRoot = claimNullifier.root();
-    const claimWitness = claimNullifier.witness(ClaimElectorNullifierLeaf.key(
-      electorPuk, claimUidf
-    ));
+    const claimKey = ClaimElectorNullifierLeaf.key(electorPuk, UID.toField(claimUid));
+    const claimWitness = claimNullifier.witness(claimKey);
+
+    assertHasNotVoted(
+      electorPuk, UID.toField(claimUid),
+      claimRoot, claimWitness
+    );  
+
 
     // we ALWAYS compile it
     await ClaimVotingContract.compile();
 
-    // get the claim and check we akready have a zkApp binded to it
-    const claim = await getClaim(claimUid);
-    if (! claim!.accountId) {
-      return {
-        error: {}
-      }
-    }
-
     // now get the zkApp itself
+    let hasAccount = await fetchAccount({ publicKey: claim!.accountId });
+    if (! hasAccount) return {
+      error: hasException({
+        code: UNRESOLVED_ERROR,
+        message: `Could not fetch the zkApp account=${claim!.accountId}`
+      })
+    }
     let zkClaim = new ClaimVotingContract(
       PublicKey.fromBase58(claim!.accountId)
     );
+    let zkAppClaimUid = zkClaim.claimUid.get();
+    console.log(`assertAppClaimUid ${sliced(claim!.accountId)} ${sliced(UID.toField(claimUid).toString())} ${sliced(zkAppClaimUid.toString())}`)
 
     let result = await this.proveAndSend(
       // the transaction 
