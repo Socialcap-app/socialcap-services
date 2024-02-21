@@ -18,6 +18,7 @@ export {
 
 
 async function assignTaskToElectors(
+  planUid: string,
   claim: any, 
   electors: any[]
 ) {
@@ -33,6 +34,7 @@ async function assignTaskToElectors(
 
     let task = {
       uid: UID.uuid4(),
+      planUid: planUid,
       claimUid: claim.uid,
       assigneeUid: elector.uid,
       state: ASSIGNED,
@@ -145,7 +147,7 @@ async function assignAllElectors(planUid: string) {
 
     // after the Nullifier was updated we can now 
     // assign the tasks to the selected electors
-    await assignTaskToElectors(claim, electors); 
+    await assignTaskToElectors(planUid, claim, electors); 
 
     let result = await updateEntity("claim", claim.uid, {
       uid: claim.uid,
