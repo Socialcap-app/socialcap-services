@@ -1,5 +1,11 @@
 import { UNRESOLVED } from "./transaction-queues";
 
+export interface IResult {
+  success: boolean,
+  data?: any,
+  error?: IError
+};
+
 export interface IError {
   code: number;
   message: string;
@@ -24,14 +30,14 @@ export const WORKER_UNAVAILABLE = {
   message: "The required worker is not available.",
 }
 
+export const NO_FEE_PAYER_AVAILABLE = {
+  code: WORKER_ERROR,
+  message: "There is no fee payer with this account publicKey.",
+}
+
 export const CREATE_ACCOUNT_WAITING_TIME_EXCEEDED = {
   code: UNRESOLVED_ERROR,
   message: "Waiting for account time exceeded !"
-}
-
-export const NO_FEE_PAYER_AVAILABLE = {
-  code: UNRESOLVED_ERROR,
-  message: "There is no fee payer with this account publicKey.",
 }
 
 export const ACCOUNT_NOT_FOUND = {

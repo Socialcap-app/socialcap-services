@@ -16,7 +16,7 @@ class Sequencer {
   // for a given type. There is one (and only one) Dispatcher per type.
   private static _dispatchers = new Map<string, DispatcherProxy>;
 
-  private static RETRY_DELAY = 60000; // 60 secs
+  private static RETRY_DELAY = 3*60000; // 3 minutes
 
   public static getQueue(name: string): TransactionsQueue {
     return Sequencer._queues.get(name) as TransactionsQueue;
@@ -234,13 +234,19 @@ class Sequencer {
       return;
 
     if (txn.state === RETRY && sender.state === MUST_RETRY) {
-      // we must waiting a little before retrying 
-      SendersPool.changeSenderState(queue.name(), RETRYING);
-      await delay(Sequencer.RETRY_DELAY);
-
-      // now we can dispatch it ...
-      const dispatcher = Sequencer.getDispatcher(txn.type);
-      await Sequencer.dispatch(txn, queue, sender);
+      try {
+        // we must waiting a little before retrying 
+        SendersPool.changeSenderState(queue.name(), RETRYING);
+        await delay(Sequencer.RETRY_DELAY);
+  
+        // now we can dispatch it ...
+        const dispatcher = Sequencer.getDispatcher(txn.type);
+        await Sequencer.dispatch(txn, queue, sender);
+      }
+      catch (err) {
+        console.log("Failed on waitRetry ", err);
+        SendersPool.freeSender(queue.name());
+      }
     }
   }
   

@@ -4,6 +4,7 @@ import { RawTxnData, TxnResult } from "./transaction-queues.js";
 import { AnyDispatcher } from "./any-dispatcher.js";
 import { SequencerLogger } from "./logs.js";
 import { Sender } from "./senders-pool.js";
+import { hasException, IError, IResult } from "./error-codes.js";
 
 export {
   Sequencer,
@@ -14,4 +15,7 @@ export {
   Sender,
   RawTxnData,
   TxnResult,
+  IError,
+  IResult,
+  hasException
 }
