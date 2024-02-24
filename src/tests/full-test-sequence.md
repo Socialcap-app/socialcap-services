@@ -188,7 +188,7 @@ $ sudo login socialcap
 
 ## Level 4
 
-Tests the dispatch of votes and calculation of results.
+Tests processing votes batches, and adding dispatchVote Txns to sequencer.
 
 - Input: `testdb-L3`
 
@@ -223,13 +223,55 @@ Using the Admined page and Voting tab:
 - The state must be TALLYING
 - Use button "Start Tally !"
 
-
-
 **5. Dump the prepared Db to testdb-L4** 
 
 ~~~
 $ sudo login socialcap
 ./run/dump-testdb.sh L4
+~~~
+---
+
+## Level 5
+
+Tests running the Sequencer and dispatching all transactions.
+
+- Input: `testdb-L4`
+
+- Output: `testdb-L5`
+
+**1. Restore the testdb-L4 for testing**
+
+~~~
+$ sudo login socialcap
+$ ./run/restore-testdb.sh L4
+~~~
+
+**2. Start needed Dispatchers**
+
+~~~
+./run-dispatcher.sh 3081
+./run-dispatcher.sh 3082
+~~~
+
+**3. Start the Sequencer**
+
+~~~
+./run-sequencer.sh
+~~~
+
+**4. Wait to process all transactions**
+
+Must have created all the zkClaims (Claim zkApp accounts) and dispatched all votes.
+
+Results will be in the `transaction_queues` table.
+
+And the zkClaims should have the final result and vote actions.
+
+**5. Dump the prepared Db to testdb-L5** 
+
+~~~
+$ sudo login socialcap
+./run/dump-testdb.sh L5
 ~~~
 ---
 
