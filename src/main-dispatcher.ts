@@ -110,9 +110,9 @@ fastify.listen({ port: PORT }, (err, address) => {
     process.exit(1);
   }
   logger.info(`Dispatcher listening at ${address}`);
+  logger.info(`MINA id=${Network.getNetworkId()}`);
   logger.info(`MINA proxy=${process.env.MINA_PROXY}`);
   logger.info(`MINA archive=${process.env.MINA_ARCHIVE}`);
-  logger.info(`MINA id=${Network.getNetworkId()}`);
 
   // preload available Payer accounts from .env
   loadPayers();
