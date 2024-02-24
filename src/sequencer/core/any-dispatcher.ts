@@ -9,12 +9,12 @@ import { waitForTransaction } from "./wait-for-transaction.js";
 import { TxnEvent, postTxnEvent } from "./transaction-events.js";
 import { SequencerLogger as log } from "./logs.js";
 import { Sender } from "./senders-pool.js";
+import { IResult, hasException } from "./error-codes.js";
 
 import { 
   TRY_SEND_TRANSACTION_EXCEPTION,
   TRY_WAITING_TRANSACTION_EXCEPTION,
   POST_TRANSACTION_EVENT_FAILED,
-  hasException,
   PREPARE_TRANSACTION_FAILED,
   PROVING_TRANSACTION_FAILED, 
 } from "./error-codes.js";
@@ -48,12 +48,12 @@ abstract class AnyDispatcher {
   abstract onSuccess(
     txData: RawTxnData, 
     result: TxnResult
-  ): Promise<TxnResult>;
+  ): Promise<IResult>;
 
   abstract onFailure(
     txData: RawTxnData, 
     result: TxnResult
-  ): Promise<TxnResult>;
+  ): Promise<IResult>;
 
   /**
    * Proves and sends the given transaction, but it does NOT wait for it !

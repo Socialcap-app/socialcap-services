@@ -44,30 +44,25 @@ export async function getClaimsByPlan(planUid: string, params: {
     orderBy: { createdUTC: 'desc' }
   })
   return claims || [];
-
-  // let filtered = (claims || []).filter((claim) => {
-  //   console.log("included? ", params.states, claim.state, params.states.includes(claim.state as number) )
-  //   return (params.states.includes(claim.state))
-  // })
-  // return filtered || [];
 }
 
-export async function updateClaimVotes(params: {
-  uid: string,
+export async function updateClaimResults(uid: string, params: {
   positive: number,
   negative: number,
-  ignored: number
+  ignored: number,
+  state: number
 }) {
   const claim = await prisma.claim.update({
-    where: { uid: params.uid },
+    where: { uid: uid },
     data: { 
+      state: params.state,
       positiveVotes: params.positive,
       negativeVotes: params.negative,
       ignoredVotes: params.ignored,
-      updatedUTC: (new Date()).toISOString()
+      updatedUTC: (new Date()).toISOString(),
+      votedUTC:  (new Date()).toISOString()
     }
   })  
-
   return claim;
 }
 

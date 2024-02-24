@@ -22,9 +22,8 @@ const Payers: any = {}; // Payers dictio
  * Builds the Payers dictio from .env.
  */
 function loadPayers() {
-  let basePort = Number(process.env.WORKERS_BASE_PORT);
-  let activeWorkers = Number(process.env.WORKERS_ACTIVE);
-  for (let j=0; j < activeWorkers; j++) {
+  let totalPayers = Number(process.env.WORKERS_PAYERS);
+  for (let j=0; j < totalPayers; j++) {
     let keys = 'WORKER_'+(String(j+1).padStart(2, '0')); 
     let [pk,sk] = String(process.env[keys]).split(',').map(t => t.trim());
   
@@ -33,7 +32,7 @@ function loadPayers() {
       publicKey: PublicKey.fromBase58(pk),
       privateKey: PrivateKey.fromBase58(sk)
     };
-    log.info(`Payer j=${j} address=${pk}`)
+    log.info(`Payer #${j+1} address=${pk}`)
   }
 }
 

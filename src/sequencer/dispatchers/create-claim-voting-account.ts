@@ -3,9 +3,9 @@ import { ClaimVotingContract } from "@socialcap/claim-voting";
 import { UID } from "@socialcap/contracts-lib";
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
 import { AnyPayer, findPayer } from "./payers.js";
-import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
 import { updateClaimAccountId } from "../../dbs/claim-helpers.js";
-import { ACCOUNT_NOT_FOUND, hasException, NO_FEE_PAYER_AVAILABLE } from "../core/error-codes.js";
+import { ACCOUNT_NOT_FOUND, WORKER_ERROR, NO_FEE_PAYER_AVAILABLE, IError, hasException, IResult } from "../core/error-codes.js";
+import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
 
 export { CreateClaimVotingAccountDispatcher };
 
@@ -82,21 +82,21 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
   async onSuccess(
     txnData: RawTxnData, 
     result: TxnResult
-  ): Promise<TxnResult> {
+  ): Promise<IResult> {
     // if we are really finished , we need to update the associated accountId
     console.log("onSucess txnData=", txnData, " result=", result)
     const { claimUid, claimAddress } = txnData.data;
     await updateClaimAccountId(claimUid, { accountId: claimAddress });
-    return result;
+    return { success: true };
   }
   
   async onFailure(
     txnData: RawTxnData, 
     result: TxnResult
-  ): Promise<TxnResult> {
+  ): Promise<IResult> {
     // if failed, we set the accountId to empty string to mark it as unusable
     const { claimUid, claimAddress } = txnData.data;
     await updateClaimAccountId(claimUid, { accountId: "" });
-    return result;
+    return { success: true };
   }
 }

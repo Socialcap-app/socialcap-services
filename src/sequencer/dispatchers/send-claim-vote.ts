@@ -1,13 +1,14 @@
 import { PrivateKey, PublicKey, Field, fetchAccount, MerkleMapWitness } from "o1js";
-import { DONE, UID, ASSIGNED, sliced } from "@socialcap/contracts-lib";
+import { DONE, UID, ASSIGNED, sliced, VOTING } from "@socialcap/contracts-lib";
 import { ClaimElectorNullifier, ClaimElectorNullifierLeaf, ClaimVotingContract } from "@socialcap/claim-voting";
 import { BatchVoteNullifierWitness, BatchVoteNullifier, BatchVoteNullifierLeaf } from '@socialcap/batch-voting';
 import { DEPLOY_TX_FEE } from "./standard-fees.js";
-import { getClaim } from "../../dbs/claim-helpers.js";
-import { getJSON } from "../../dbs/nullifier-helpers.js";
+import { getClaim, updateClaimResults } from "../../dbs/claim-helpers.js";
+import { getJSON, saveJSON } from "../../dbs/nullifier-helpers.js";
 import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
 import { AnyPayer, findPayer } from "./payers.js";
-import { UNRESOLVED_ERROR, NOT_FOUND, hasException } from "../core/error-codes.js";
+import { WORKER_ERROR, UNRESOLVED_ERROR, NOT_FOUND, hasException, IError, IResult } from "../core/error-codes.js";
+import { networkConfig } from "o1js/dist/node/lib/fetch.js";
 
 export { SendClaimVoteDispatcher };
 
@@ -54,6 +55,51 @@ function assertIsInBatch(
 }
 
 
+/**
+ * Gievn the Claim UID, get the associated zkApp accountId and 
+ * get the alerady deployed zkApp instance (zkClaim) for it.
+ * @param uid - the claim uid 
+ * @returns [zkClaim, error]
+ */
+async function getZkClaim(uid: string): Promise<[
+  ClaimVotingContract | null, IError | null
+]> {
+    // get the claim and check we already have a zkApp binded to it
+    const claim = await getClaim(uid);
+    if (! claim?.accountId) return [null, hasException({
+        code: UNRESOLVED_ERROR,
+        message: `Claim ${uid} has no associated zkApp account`
+      })
+    ]
+
+    // we ALWAYS compile it
+    await ClaimVotingContract.compile();
+
+    // now get the zkApp itself
+    let hasAccount = await fetchAccount({ publicKey: claim!.accountId });
+    if (! hasAccount) return [null, hasException({
+        code: UNRESOLVED_ERROR,
+        message: `Could not fetch the zkClaim account=${claim!.accountId}`
+      })
+    ]
+
+    let zkClaim = new ClaimVotingContract(
+      PublicKey.fromBase58(claim!.accountId)
+    );
+
+    // assert the Claim UID
+    let zkAppClaimUid = zkClaim.claimUid.get();
+    console.log(`assert zkClaim=${sliced(claim!.accountId)} uid=${sliced(UID.toField(uid).toString())} zkClaim.claimUid=${sliced(zkAppClaimUid.toString())}`)
+    if (zkAppClaimUid.toString() !== UID.toField(uid).toString()) return [null, hasException({
+      code: UNRESOLVED_ERROR,
+      message: `Assert failed: zkClaim.claimUid=${zkAppClaimUid.toString} NOT EQUALS claim.uid=${uid}`
+    })
+  ]
+
+  return [zkClaim, null];
+}
+
+
 class SendClaimVoteDispatcher extends AnyDispatcher {
 
   static uname = 'SEND_CLAIM_VOTE';
@@ -90,18 +136,14 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
 
     // find the Deployer secret keys using the sender addresss
     // find the Deployer using the sender addresss
-    const [deployer, error] = await findPayer(sender.accountId);
+    let [deployer, errorNoPayer] = await findPayer(sender.accountId);
     if (!deployer) 
-      return error;
+      return errorNoPayer;
 
-    // get the claim and check we akready have a zkApp binded to it
-    const claim = await getClaim(claimUid);
-    if (! claim!.accountId) return {
-      error: hasException({
-        code: UNRESOLVED_ERROR,
-        message: `Claim ${claimUid} has no associated zkApp account`
-      })
-    }
+    // get the claim and check we already have a zkApp binded to it
+    let [zkClaim, errorBadClaim] = await getZkClaim(claimUid);
+    if (!zkClaim)
+      return errorBadClaim;
 
     const electorPuk = PublicKey.fromBase58(electorAccountId);
 
@@ -133,28 +175,10 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
       claimRoot, claimWitness
     );  
 
-
-    // we ALWAYS compile it
-    await ClaimVotingContract.compile();
-
-    // now get the zkApp itself
-    let hasAccount = await fetchAccount({ publicKey: claim!.accountId });
-    if (! hasAccount) return {
-      error: hasException({
-        code: UNRESOLVED_ERROR,
-        message: `Could not fetch the zkApp account=${claim!.accountId}`
-      })
-    }
-    let zkClaim = new ClaimVotingContract(
-      PublicKey.fromBase58(claim!.accountId)
-    );
-    let zkAppClaimUid = zkClaim.claimUid.get();
-    console.log(`assertAppClaimUid ${sliced(claim!.accountId)} ${sliced(UID.toField(claimUid).toString())} ${sliced(zkAppClaimUid.toString())}`)
-
     let result = await this.proveAndSend(
       // the transaction 
       () => {
-        zkClaim.dispatchVote(
+        zkClaim!.dispatchVote(
           electorPuk,
           Field(vote), // +1 positive, -1 negative or 0 ignored
           batchRoot,
@@ -174,18 +198,47 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
   async onSuccess(
     txnData: RawTxnData, 
     result: TxnResult
-  ): Promise<TxnResult> {
-    const { claimUid } = txnData.data;
-    /*
-    MUST update Nullifiers here ...
-    */
-    return result;
+  ): Promise<IResult> {
+    const { claimUid, planUid, electorAccountId } = txnData.data;
+
+    /* first update vote Nullifier */
+    const nullifierUid = `claim-elector-nullifier-${planUid}`;
+    let nullifier = new ClaimElectorNullifier();
+    nullifier = await getJSON<ClaimElectorNullifier>(nullifierUid, nullifier);
+    nullifier.set(ClaimElectorNullifierLeaf.key(
+        PublicKey.fromBase58(electorAccountId), 
+        UID.toField(claimUid)
+      ), 
+      Field(DONE)
+    );
+    await saveJSON<ClaimElectorNullifier>(nullifierUid, nullifier);
+
+    // get and asert the current claim
+    let [zkClaim, errorBadClaim] = await getZkClaim(claimUid);
+    if (! zkClaim) return {
+      success: false,
+      error: errorBadClaim as IError
+    }
+    
+    // now check state and see if claim voting has finished
+    let status = Number(zkClaim.result.get().toString());
+    if (status === VOTING)
+      return { success: true };
+
+    // we have finished, update Claim state and voting results
+    await updateClaimResults(claimUid, { 
+      state: status,
+      positive: Number(zkClaim.positive.get().toString()),
+      negative: Number(zkClaim.negative.get().toString()),
+      ignored: Number(zkClaim.ignored.get().toString())
+    });
+    return { success: true };
   }
 
   async onFailure(
     txnData: RawTxnData, 
     result: TxnResult
-  ): Promise<TxnResult> {
-    return result;
+  ): Promise<IResult> {
+    return { success: true };
   }
 }
