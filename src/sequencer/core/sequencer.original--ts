@@ -40,20 +40,39 @@ class Sequencer {
       // is there a blocked Sender attached to this queue ?
       let sender = SendersPool.getBlockedSender(queue.name());
 
-      // get the running transaction [WAITING, REVISION, RETRY]
-      let runningTxn = await queue.getRunningTransaction();
+      // we have a Sender and this means we have a transaction on course 
+      if (sender) {
+        // check how we are going with the running transaction
+        let runningTxn = await queue.getRunningTransaction();
+        if (!runningTxn)
+          continue;
 
-      // if no transaction BUT we have a blocked sender, must release it
-      if (!runningTxn && sender)
-        SendersPool.freeSender(queue.name());
+        if (runningTxn.state === WAITING) {
+          await Sequencer.dispatch(runningTxn, queue, sender);
+          continue;
+        }
 
-      // if there is no transaction and no blocked sender, just continue
-      if (!runningTxn)
-        continue;
+        if (runningTxn.state === REVISION) {
+          Sequencer.waitCompletion(runningTxn, queue, sender);
+          continue;
+        }
 
-      // now we check if we need a sender, or if we already have one 
-      if (!sender) { 
-        // need  a free sender so we can dispatch it 
+        if (runningTxn.state === RETRY) {
+          Sequencer.waitRetry(runningTxn, queue, sender);
+          continue;
+        }
+      }
+
+      // there are no running transactions on this Queue:
+      if (!sender) {
+        // check if we have pending transactions to run. 
+        // retrieve the first pending one from the Queue (FIFO)
+        let pendingTxn = await queue.getFirstWaitingTransaction();
+        if (! pendingTxn)
+          // no pending txns, we just pass.
+          continue;
+
+        // now we need  a free sender so we can dispatch it 
         sender = SendersPool.getAvailableSender();
         if (!sender) 
           // if no sender available (all senders are taken)
@@ -63,22 +82,10 @@ class Sequencer {
         // we have an available sender ! 
         // first block it now so nobody else can take it
         SendersPool.blockSender(sender, queue.name());
+
+        // now we can dispatch the transaction 
+        await Sequencer.dispatch(pendingTxn, queue, sender);
       }  
-
-      if (runningTxn?.state === WAITING) {
-        await Sequencer.dispatch(runningTxn, queue, sender);
-        continue;
-      }
-
-      if (runningTxn?.state === REVISION) {
-        Sequencer.waitCompletion(runningTxn, queue, sender);
-        continue;
-      }
-
-      if (runningTxn?.state === RETRY) {
-        Sequencer.waitRetry(runningTxn, queue, sender);
-        continue;
-      }
     }
 
     return Sequencer;

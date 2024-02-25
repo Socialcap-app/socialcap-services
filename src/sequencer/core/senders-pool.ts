@@ -24,6 +24,7 @@
  * blocked this sender for its own use.
  */
 import { KVS } from "./kv-store.js";
+import { SequencerLogger as log } from "./logs.js";
 
 export { Sender, SendersPool }
 
@@ -173,6 +174,7 @@ class SendersPool {
       }
       // if not in current pool, just ignore it. The stored state will be 
       // updated later by other methods ...
+      log.info(`SendersPool ${sender.accountId} ${sender.queue} ${sender.state} ${sender.workerUrl}`);
     })
   }
 
