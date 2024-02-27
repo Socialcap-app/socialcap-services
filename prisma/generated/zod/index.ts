@@ -450,7 +450,7 @@ export const TransactionQueueSchema = z.object({
   data: z.string(),
   state: z.number().int(),
   receivedUTC: z.coerce.date(),
-  submitedUTC: z.coerce.date(),
+  submitedUTC: z.coerce.date().nullish(),
   doneUTC: z.coerce.date().nullish(),
   retries: z.number().int(),
   hash: z.string(),
