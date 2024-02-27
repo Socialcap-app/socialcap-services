@@ -26,10 +26,3 @@ Shows the onboarding process for the SocialCap App.
 
 ![onboarding-flow.drawio](./onboarding-flow.drawio.png)
 
-
-
-###  API Clients 
-
-- [Sessions API client](../api/client-sessions.md)
-- [Personas API client](../api/client-personas.md)
-

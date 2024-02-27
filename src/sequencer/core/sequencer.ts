@@ -40,7 +40,7 @@ class Sequencer {
       // is there a blocked Sender attached to this queue ?
       let sender = SendersPool.getBlockedSender(queue.name());
 
-      // get the running transaction [WAITING, REVISION, RETRY]
+      // get the first running transaction [WAITING, REVISION, RETRY]
       let runningTxn = await queue.getRunningTransaction();
 
       // if no transaction BUT we have a blocked sender, must release it
@@ -240,10 +240,12 @@ class Sequencer {
         // now we can dispatch it ...
         const dispatcher = Sequencer.getDispatcher(txn.type);
         await Sequencer.dispatch(txn, queue, sender);
+        return;
       }
       catch (err) {
         console.log("Failed on waitRetry ", err);
         SendersPool.freeSender(queue.name());
+        return;
       }
     }
 
