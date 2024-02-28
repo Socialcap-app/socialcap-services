@@ -89,7 +89,7 @@ async function getZkClaim(uid: string): Promise<[
 
     // assert the Claim UID
     let zkAppClaimUid = zkClaim.claimUid.get();
-    console.log(`assert zkClaim=${sliced(claim!.accountId)} uid=${sliced(UID.toField(uid).toString())} zkClaim.claimUid=${sliced(zkAppClaimUid.toString())}`)
+    // console.log(`assert zkClaim=${sliced(claim!.accountId)} uid=${sliced(UID.toField(uid).toString())} zkClaim.claimUid=${sliced(zkAppClaimUid.toString())}`)
     if (zkAppClaimUid.toString() !== UID.toField(uid).toString()) return [null, hasException({
       code: UNRESOLVED_ERROR,
       message: `Assert failed: zkClaim.claimUid=${zkAppClaimUid.toString} NOT EQUALS claim.uid=${uid}`
@@ -155,12 +155,6 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
     const batchRoot = batchNullifier.root();
     const batchWitness = batchNullifier.witness(BigInt(index));
 
-    console.log(`batch vote index=${index} vote=${vote}`);  
-    assertIsInBatch(
-      electorPuk, UID.toField(claimUid), Field(vote),
-      batchRoot, batchWitness
-    );
-
     // claim and elector Nullifier AHORA !  
     let claimNullifier = await getJSON<ClaimElectorNullifier>(
       `claim-elector-nullifier-${planUid}`, 
@@ -169,11 +163,6 @@ class SendClaimVoteDispatcher extends AnyDispatcher {
     const claimRoot = claimNullifier.root();
     const claimKey = ClaimElectorNullifierLeaf.key(electorPuk, UID.toField(claimUid));
     const claimWitness = claimNullifier.witness(claimKey);
-
-    assertHasNotVoted(
-      electorPuk, UID.toField(claimUid),
-      claimRoot, claimWitness
-    );  
 
     let result = await this.proveAndSend(
       // the transaction 
