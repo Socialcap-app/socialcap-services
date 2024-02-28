@@ -25,44 +25,59 @@ const GRAPHQL_ENDPOINT = String(process.env.MINA_GRAPHQL);
 
 async function waitForTransaction(
   txnId: string
-): Promise<TxnResult | null> {
+): Promise<TxnResult> {
   let counter = 0;
 
-  let rsp = await queryTxnStatus(txnId);
-  let done = rsp.error === null ? rsp.data : null;
-  log.waitingTransaction(txnId, counter*INTERVAL/1000, done);
+  for (;;) {
+    if (counter > MAX_RETRIES) {
+      // break here and return
+      return {
+        hash: txnId,
+        done: {},
+        error: hasException(TRANSACTION_WAITING_TIME_EXCEEDED, {
+          "timeoutAt": counter * INTERVAL
+        })
+      };
+    }
 
-  if (done && done.blockHeight && done.failureReason === null) {
-    // we can now proceed with whatever does the callback
-    return {
-      hash: txnId,
-      done: done
-    }; 
+    let rsp = await queryTxnStatus(txnId);
+    let done = rsp.error === null ? rsp.data : null;
+    log.waitingTransaction(txnId, counter*INTERVAL/1000, done);
+
+    if (done && done.blockHeight && done.failureReason === null) {
+      // we can now proceed with whatever does the callback
+      return {
+        hash: txnId,
+        done: done
+      }; 
+    }
+
+    if (done && done.failureReason !== null) {
+      // this is a Mina error
+      let message = (done.failureReason || []).map((t: any) => {
+        return t.failures[0];      
+      }).join(", ");
+
+      return {
+        hash: txnId,
+        done: done,
+        error: hasException(TRANSACTION_FAILED_EXCEPTION, done.failureReason)
+      };
+    }
+
+    if (rsp.error) {
+      // This is an Axios (or other) error
+      return {
+        hash: txnId,
+        done: {},
+        error: hasException(TRANSACTION_FAILED_EXCEPTION, rsp.error)
+      };
+    }
+  
+    // no response ... wait and retry
+    counter++;
+    await new Promise((resolve) => setTimeout(resolve, INTERVAL));
   }
-
-  if (done && done.failureReason !== null) {
-    // this is a Mina error
-    let message = (done.failureReason || []).map((t: any) => {
-      return t.failures[0];      
-    }).join(", ");
-
-    return {
-      hash: txnId,
-      done: done,
-      error: hasException(TRANSACTION_FAILED_EXCEPTION, done.failureReason)
-    };
-  }
-
-  if (rsp.error) {
-    // This is an Axios (or other) error
-    return {
-      hash: txnId,
-      done: {},
-      error: hasException(TRANSACTION_FAILED_EXCEPTION, rsp.error)
-    };
-  }
-
-  return null;
 }
 
 

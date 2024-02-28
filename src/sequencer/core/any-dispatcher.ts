@@ -123,7 +123,7 @@ abstract class AnyDispatcher {
    */
    async waitForInclusion(
     txnHash: string
-  ): Promise<TxnResult> {
+  ): Promise<TxnResult | null> {
     try {
       let result = await waitForTransaction(txnHash);
       return result;

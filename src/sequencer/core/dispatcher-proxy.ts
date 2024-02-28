@@ -98,7 +98,7 @@ class DispatcherProxy {
   ) {
     try {
       let result = await waitForTransaction(txnHash);
-      if (callback) callback(result);
+      if (result && callback) callback(result);
     }
     catch (err: any) {
       if (callback) callback({
