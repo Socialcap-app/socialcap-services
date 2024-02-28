@@ -40,7 +40,7 @@ export const BatchScalarFieldEnumSchema = z.enum(['uid','sequence','type','metad
 
 export const StateScalarFieldEnumSchema = z.enum(['id','label']);
 
-export const TransactionQueueScalarFieldEnumSchema = z.enum(['uid','sequence','queue','type','data','state','receivedUTC','submitedUTC','doneUTC','retries','hash','done','error']);
+export const TransactionQueueScalarFieldEnumSchema = z.enum(['uid','sequence','queue','type','data','state','receivedUTC','submitedUTC','retriedUTC','doneUTC','retries','hash','done','error']);
 
 export const TransactionEventScalarFieldEnumSchema = z.enum(['sequence','type','subject','payload','state','emittedUTC']);
 
@@ -451,6 +451,7 @@ export const TransactionQueueSchema = z.object({
   state: z.number().int(),
   receivedUTC: z.coerce.date(),
   submitedUTC: z.coerce.date().nullish(),
+  retriedUTC: z.coerce.date().nullish(),
   doneUTC: z.coerce.date().nullish(),
   retries: z.number().int(),
   hash: z.string(),

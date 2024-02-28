@@ -285,6 +285,7 @@ model TransactionQueue {
   state       Int       @default(9) // Processing state of the Tx 9: "WAITING", 10: "DONE", 11: "IGNORED" 13: "FAILED"
   receivedUTC DateTime  @default(now()) @map("received_utc") // the time it was received
   submitedUTC DateTime? @map("submited_utc") // the submited to MINA time
+  retriedUTC  DateTime? @map("retried_utc") // timestamp for the retry request
   doneUTC     DateTime? @map("done_utc") // the final "done with it" time (either on DONE, FAILED or IGNORED)
   retries     Int       @default(0) // Number of retries of this transaction before declaring Failure
 

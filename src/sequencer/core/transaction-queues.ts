@@ -12,7 +12,8 @@ const
   DONE = 103,
   RETRY = 104,
   FAILED = 105,
-  UNRESOLVED = 106;
+  UNRESOLVED = 106,
+  DISPATCHING = 107;
 
 const MAX_RETRIES = 2; // in fact we try 3 times: the first one and 2 more retries
 
@@ -21,7 +22,7 @@ export {
   postTransaction,
   RawTxnData, 
   TxnResult,
-  WAITING, REVISION, DONE, FAILED, RETRY, UNRESOLVED, MAX_RETRIES 
+  WAITING, REVISION, DONE, FAILED, RETRY, UNRESOLVED, DISPATCHING, MAX_RETRIES 
 };
 
 interface RawTxnData {
@@ -30,6 +31,7 @@ interface RawTxnData {
   data: any; // A parsed JSON object
   state?: number; // REVISION, RETRY, WAITING
   hash?: string; // the MINA txn hash (if send was successful)
+  ts?: number // the Txn timestamp, not required, used in some special cases
 }
 
 interface TxnResult {
@@ -86,7 +88,7 @@ class TransactionsQueue {
         type: params.type,
         data: (typeof(params.data) === 'string' 
                 ? params.data : JSON.stringify(params.data || "{}")),
-        submitedUTC: (new Date()).toISOString(),
+        receivedUTC: (new Date()).toISOString(),
         state: WAITING
       }
     })
@@ -142,19 +144,30 @@ class TransactionsQueue {
     let txs = await prisma.transactionQueue.findMany({
       where: { AND: [
         { queue: this._queue },
-        { state: {in: [REVISION, RETRY, WAITING]} }, 
+        { state: {in: [REVISION, RETRY, WAITING, DISPATCHING]} }, 
       ]},
       orderBy: { sequence: 'asc'      }
     })
 
-    let tx = txs.length ? txs[0] : null ; // just return the firt or Null 
+    let tx = txs.length ? txs[0] : null ; // just return the first or Null 
     if (!tx) return null;
+
+    // get the right Timestamp
+    let tsd: Date | null = null;
+    switch (tx.state) {
+      case RETRY: tsd = tx.retriedUTC ; break;     
+      case DISPATCHING: tsd = tx.submitedUTC; break;     
+      case REVISION: tsd = tx.submitedUTC; break;     
+      case WAITING: tsd = tx.receivedUTC; break;     
+    };
+
     return {
       uid: tx.uid,
       type: tx.type,
       state: tx.state,
       hash: tx.hash,
-      data: JSON.parse(tx.data || "{}")
+      data: JSON.parse(tx.data || "{}"),
+      ts: tsd ? Date.parse(tsd.toISOString()) : undefined
     }
   }
 
@@ -198,10 +211,55 @@ class TransactionsQueue {
   async retryTransaction(uid: string): Promise<any> {
     let txu = await prisma.transactionQueue.update({
       where: { uid: uid },
-      data: { retries: {increment: 1}, state: RETRY },
+      data: { 
+        retries: {increment: 1}, 
+        state: RETRY,
+        retriedUTC: (new Date()).toISOString()
+      },
     })
-    log.retryPending(txu);
     return txu;
+  }
+
+  /**
+   * Mark certain state changes
+   * @param uid
+   * @returns TransactionQueue
+   */
+  async markDispatchingTransaction(uid: string): Promise<any> {
+    let txu = await prisma.transactionQueue.update({
+      where: { uid: uid },
+      data: { 
+        state: DISPATCHING,
+        submitedUTC: (new Date()).toISOString()
+       },
+    })
+    return txu;
+  }
+
+  async markWaitingTransaction(uid: string): Promise<any> {
+    let txu = await prisma.transactionQueue.update({
+      where: { uid: uid },
+      data: { state: WAITING },
+    })
+    return txu;
+  }
+
+  async markRetryingTransaction(uid: string): Promise<any> {
+    let txu = await prisma.transactionQueue.update({
+      where: { uid: uid },
+      data: { state: RETRY },
+    })
+    return txu;
+  }
+
+  async markRevisionTransaction(
+    uid: string,
+    result: TxnResult
+  ): Promise<any> {
+    return await this.updateTransaction(uid, {
+      state: REVISION, 
+      result: result
+    });
   }
 
   /**
@@ -247,16 +305,6 @@ class TransactionsQueue {
       state: DONE, 
       result: result,
       doneUTC: (new Date()).toISOString()
-    });
-  }
-
-  async closeRevisionTransaction(
-    uid: string,
-    result: TxnResult
-  ): Promise<any> {
-    return await this.updateTransaction(uid, {
-      state: REVISION, 
-      result: result
     });
   }
 
