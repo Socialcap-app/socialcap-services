@@ -1,14 +1,22 @@
 import 'dotenv/config';
-import { 
-  setupSequencer, 
-  startSequencer 
-} from "./sequencer/core/index.js";
-
+import { spawn } from 'child_process';
+import { logger } from './global.js';
+import { setupSequencer, startSequencer } from "./sequencer/core/index.js";
 import { 
   CreateClaimVotingAccountDispatcher,
   SendClaimVoteDispatcher
 } from "./sequencer/dispatchers/index.js"
-import { logger } from './global.js';
+
+
+const spawnDispatcher = async (port: string) => {
+  const child: any = spawn('node', ['build/src/main-dispatcher.js', port], {
+    stdio: 'inherit',
+    detached: true
+  });
+  console.log("PID=", child.pid.toString());
+  child.unref();
+};
+
 
 // load worker options from .env
 let WORKERS = [];
@@ -24,6 +32,8 @@ for (let j=0; j < activeWorkers; j++) {
     secretKey: sk, 
     workerUrl: `${baseUrl}:${port}`
   }
+
+  spawnDispatcher(port);
 }
 
 setupSequencer({
