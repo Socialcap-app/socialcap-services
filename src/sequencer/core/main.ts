@@ -58,8 +58,10 @@ export function startSequencer() {
   // start the Db storage
   console.log("\n");
   merkleStorage.startup();
+
   SendersPool.restorePoolState();
-  
+  SendersPool.startAllWorkers();
+    
   // we need the Db to be ready before we can do anything
   // so we make it wait for INTERVAL secs before running
   let to = setTimeout(async () => {

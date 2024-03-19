@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { spawn } from 'child_process';
 import { logger } from './global.js';
 import { setupSequencer, startSequencer } from "./sequencer/core/index.js";
+import { SendersPool } from './sequencer/core/senders-pool.js';
 import { 
   CreateClaimVotingAccountDispatcher,
   SendClaimVoteDispatcher
@@ -32,8 +33,6 @@ for (let j=0; j < activeWorkers; j++) {
     secretKey: sk, 
     workerUrl: `${baseUrl}:${port}`
   }
-
-  spawnDispatcher(port);
 }
 
 setupSequencer({

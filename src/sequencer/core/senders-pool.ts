@@ -23,6 +23,8 @@
  * NOTE: In fact, the Sender state is really the state of the Queue which has 
  * blocked this sender for its own use.
  */
+import { spawn } from "child_process";
+import { kill} from "process";
 import { KVS } from "./kv-store.js";
 import { SequencerLogger as log } from "./logs.js";
 
@@ -36,6 +38,7 @@ interface Sender {
   queue: string; // must be NO_QUEUE if not assigned 
   state: number; // FREE, BLOCKED, RETRY, DELAY, INCLUSION, WAITING_INCLUSION
   retries: number;
+  pid: string; // the ProcessID of the worker
 }
 
 const POOL_STATE_KEY = "senders-pool-state";
@@ -143,7 +146,8 @@ class SendersPool {
       workerUrl: workerUrl,
       queue: NO_QUEUE,
       state: FREE,
-      retries: 0
+      retries: 0,
+      pid: ''
     })
   }
 
@@ -185,5 +189,70 @@ class SendersPool {
   */
   static savePoolState() {
     KVS.put(POOL_STATE_KEY, this._pool);
+  }
+
+  /**
+   * Spawn and kill workers
+   * We spawn a worker for each sender on startup.
+   * We kill it and restart when not responding.
+   */
+  static async spawnWorker(sender: Sender) {
+    let port = sender.workerUrl.split(':')[2];
+
+    const child: any = await spawn('node', ['build/src/main-dispatcher.js', port], {
+      stdio: 'inherit',
+      detached: true
+    });
+
+    child.on('spawn', (success: any) => {
+      sender.pid = child.pid.toString();
+      child.unref();
+      log.info(`Worker id=${sender.accountId} started, pid=${sender.pid}`);
+      SendersPool.updateSender(sender);
+      SendersPool.savePoolState();
+    });
+
+    child.on('error', (err: any) => {
+      throw new Error(`Could not start worker id='${sender.accountId}'. Spawn failed, reason=`+err);
+    });
+  }
+
+  static async restartWorker(accountId: string) {
+    let sender = SendersPool.findSender(accountId); 
+    if (! sender) throw new Error(`Could not kill worker id='${accountId}'. No such sender in pool.`);
+    try {
+      if (sender.pid) kill(Number(sender.pid));
+    }
+    catch (err) {
+      log.error(`Could not kill worker pid='${sender.pid}', reason=`+err)
+    }
+    await SendersPool.spawnWorker(sender);
+  }
+
+  static async startAllWorkers() {
+    // first kill any already running worker
+    SendersPool.killAllWorkers();
+
+    // now start all of them
+    for (let j=0; j < SendersPool._pool.length; j++) {
+      let sender = SendersPool._pool[j];
+      await SendersPool.spawnWorker(sender);
+    }
+  }
+
+  static killAllWorkers() {
+    for (let j=0; j < SendersPool._pool.length; j++) {
+      let sender = SendersPool._pool[j];
+      try {
+        if (sender.pid) {
+          kill(Number(sender.pid));
+          sender.pid = '';
+          SendersPool.updateSender(sender);
+        }
+      }
+      catch (err) {
+        log.error(`Could not kill worker pid='${sender.pid}', reason=`+err)
+      }
+    }
   }
 };
