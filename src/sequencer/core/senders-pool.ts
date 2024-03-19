@@ -213,13 +213,16 @@ class SendersPool {
     });
 
     child.on('error', (err: any) => {
-      throw new Error(`Could not start worker id='${sender.accountId}'. Spawn failed, reason=`+err);
+      log.error(`Could not start worker id='${sender.accountId}'. Spawn failed, reason=`+err);
+      sender.pid = '';
+      SendersPool.updateSender(sender);
+      SendersPool.savePoolState();
     });
   }
 
   static async restartWorker(accountId: string) {
     let sender = SendersPool.findSender(accountId); 
-    if (! sender) throw new Error(`Could not kill worker id='${accountId}'. No such sender in pool.`);
+    if (! sender) throw new Error(`Could not kill worker id='${accountId}'. No sender in pool.`);
     try {
       if (sender.pid) kill(Number(sender.pid));
     }
@@ -232,7 +235,6 @@ class SendersPool {
   static async startAllWorkers() {
     // first kill any already running worker
     SendersPool.killAllWorkers();
-
     // now start all of them
     for (let j=0; j < SendersPool._pool.length; j++) {
       let sender = SendersPool._pool[j];
@@ -255,4 +257,5 @@ class SendersPool {
       }
     }
   }
+
 };

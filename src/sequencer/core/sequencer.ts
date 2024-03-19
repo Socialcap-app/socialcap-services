@@ -175,8 +175,9 @@ class Sequencer {
   /**
    * Wait till the worker has return the call or a Timeout
    * This is for the case that the worker gets blocked and does not return
-   * $TODO$ It may happen that it gets fully blocked and then this worker will 
-   * not be able to receive new requests. We have no solution for this now !
+   * It may happen that it gets fully blocked and then this worker will 
+   * not be able to receive new requests. We restart the worker in this case
+   * and hope it can run next time
    */
   static async waitDispatcher(
     txn: RawTxnData,
@@ -187,15 +188,10 @@ class Sequencer {
     const now = Date.parse((new Date()).toISOString());
     const elapsed = (now - dispatchedTs);
     if (elapsed > Sequencer.DISPATCH_TIMEOUT) {
-      // we close it as UNRESOLVED as we can not do much more here 
-      let unresolvedTxn = await queue.closeUnresolvedTransaction(txn.uid, {
-        hash: txn.hash || '',
-        done: {},
-        error: hasException({
-          code: UNRESOLVED_ERROR,
-          message: `Txn ${txn.uid} has Timeout on worker=${sender.workerUrl}`
-        })
-      });
+      // we assume here that the worker got blocked, 
+      // because of some MINA error or other reason, 
+      // so we just restart it !
+      await SendersPool.restartWorker(sender.accountId);
       SendersPool.freeSender(queue.name());
       return;
     }
