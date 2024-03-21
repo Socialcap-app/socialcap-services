@@ -258,7 +258,9 @@ export async function prepareCommunityPlanClaimsDownload(
  */
 function valueToString(field: any) {
   if (['text','note','radio'].includes(field.type))
-    return (field.value?.substring(0, 600) || "").replaceAll('"',"'");
+    // @MAZ - we limit max size to 16K because of problems 
+    // with some truncated fields in MINA Navigators program
+    return (field.value?.substring(0, 16384) || "").replaceAll('"',"'");
 
   if (['links','files','images','checks'].includes(field.type))
     return (field.value || []).join(',').replaceAll('"',"'");
