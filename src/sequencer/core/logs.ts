@@ -21,11 +21,11 @@ export class SequencerLogger {
   }
 
   static running(qnames?: string[]) {
-    logger.info(`Sequencer.run queues=${JSON.stringify(qnames || '[]')}`);
+    // logger.info(`Sequencer.run queues=${JSON.stringify(qnames || '[]')}`);
   }
 
   static activeQueue(q: any, txn: any, sender: any) {
-    logger.info(`Sequencer.run activeQueue name=${q._queue} runningTxn=${txn.uid} worker=${sender?.workerUrl || 'NO'}`)
+    // logger.info(`Sequencer.run activeQueue name=${q._queue} runningTxn=${txn.uid} worker=${sender?.workerUrl || 'NO'}`)
   }
 
   static postedTxn(txn: any) {

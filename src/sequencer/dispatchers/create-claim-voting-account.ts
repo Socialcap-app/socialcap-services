@@ -84,7 +84,7 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
     result: TxnResult
   ): Promise<IResult> {
     // if we are really finished , we need to update the associated accountId
-    console.log("onSucess txnData=", txnData, " result=", result)
+    log.info(`onSucess txnData=${JSON.stringify(txnData)}, " result=${JSON.stringify(result)}`)
     const { claimUid, claimAddress } = txnData.data;
     await updateClaimAccountId(claimUid, { accountId: claimAddress });
     return { success: true };
@@ -95,6 +95,7 @@ class CreateClaimVotingAccountDispatcher extends AnyDispatcher {
     result: TxnResult
   ): Promise<IResult> {
     // if failed, we set the accountId to empty string to mark it as unusable
+    log.info(`onFailure txnData=${JSON.stringify(txnData)}, " result=${JSON.stringify(result)}`)
     const { claimUid, claimAddress } = txnData.data;
     await updateClaimAccountId(claimUid, { accountId: "" });
     return { success: true };
