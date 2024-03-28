@@ -229,7 +229,9 @@ class SendersPool {
     catch (err) {
       log.error(`Could not kill worker pid='${sender.pid}', reason=`+err)
     }
-    await SendersPool.spawnWorker(sender);
+    setTimeout(async () => {
+      await SendersPool.spawnWorker(sender!);
+    }, 500)
   }
 
   static async startAllWorkers() {
