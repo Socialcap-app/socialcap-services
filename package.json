@@ -27,7 +27,7 @@
     ]
   },
   "prisma": {
-    "seed": "ts-node --esm prisma/seed-testdb0.ts"
+    "seed": "INACTIVE ts-node --esm prisma/seed.ts"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.4",
