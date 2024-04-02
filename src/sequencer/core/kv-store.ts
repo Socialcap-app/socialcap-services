@@ -3,7 +3,7 @@
  * SendersPool and Queues states.
  */
 import 'dotenv/config';
-import { SequencerLogger as log } from './logs';
+import { SequencerLogger as log } from './logs.js';
 import { open } from "lmdb" ;
 
 export { KVS }
