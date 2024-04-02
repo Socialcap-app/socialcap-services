@@ -2,6 +2,7 @@ import { PublicKey, Field } from "o1js";
 import { UID, CANCELED,ASSIGNED,DONE,IGNORED } from "@socialcap/contracts-lib";
 import { BatchVoteNullifier, BatchVoteNullifierLeaf } from "@socialcap/batch-voting";
 import { fastify, prisma, logger } from "../global.js";
+import Sql from "../dbs/sql-helpers.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { waitForTransaction } from "../services/mina-transactions.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
@@ -33,6 +34,17 @@ export async function getTask(params: any) {
 export async function getMyTasks(params: any) {
   const userUid = params.user.uid;
 
+  let tasks = await Sql`
+    SELECT * 
+    FROM tasks_view
+    WHERE assignee_uid = ${ userUid } 
+      AND state = ${ ASSIGNED }
+    ORDER BY claimer asc
+  `;
+  let patched = (tasks || []);
+  return hasResult(patched);
+
+/* 
   // all commnunity Uids where is a a member
   const tasks = await prisma.task.findMany({
     where: { assigneeUid: userUid },
@@ -73,8 +85,7 @@ export async function getMyTasks(params: any) {
     t.applicant = members.findByUid(t.claim.applicantUid);
     return t; 
   })
-
-  return hasResult(patched);
+ */
 }
 
 
