@@ -8,4 +8,5 @@ sudo docker -l debug run -d --restart=always --name sc-api \
   --env MAIN=main-api \
   --user $(id -u www-data):$(id -g www-data) \
   -v /etc/localtime:/etc/localtime:ro \
+  -v /home/socialcap/var:/var \
   socialcap/services:run
