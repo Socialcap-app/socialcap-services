@@ -16,7 +16,7 @@ RUN apt install -y nodejs
 # Install the App
 WORKDIR /services
 COPY ./ /services
-COPY ./.env.devnet /services/.env
+COPY ./.env /services/.env
 
 RUN cd /services
 RUN npm i 
