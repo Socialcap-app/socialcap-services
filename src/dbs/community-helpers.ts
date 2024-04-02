@@ -1,4 +1,5 @@
 import { prisma } from "../global.js";
+import Sql from "./sql-helpers.js";
 import { CommunityMembers } from "./members-helpers.js";
 import { DRAFT, CLAIMED, IGNORED, VOTING, UNPAID, REJECTED, APPROVED } from "@socialcap/contracts-lib";
 
@@ -9,23 +10,18 @@ export async function getCommunityClaims(
   states?: number[]
 ) {
   states = states || [DRAFT,CLAIMED,IGNORED,VOTING,UNPAID,REJECTED,APPROVED];
-
-  // first the bare claims for this community (ALL of them)
-  let claims = await prisma.claim.findMany({
-    where: { AND: [
-      { communityUid: uid },
-      { state: { in: states }}
-    ]},
-    orderBy: { applicantUid: 'asc' }
-  }) as any;
-
-  // add the applicant info to every claim
-  claims = (claims || []).map((claim: any) => {
-    claim.applicant = members.findByUid(claim.applicantUid);
-    return claim;
-  })
-
-  return claims;
+  const claims = await Sql`
+    SELECT 
+      uid, state, state_descr, applicant, applicant_uid, community, community_uid, 
+      plan_uid, plan, created_utc, updated_utc, positive_votes, negative_votes, 
+      ignored_votes, evidence_data
+    FROM claims_view
+    WHERE 
+      state in ${ Sql(states) } 
+      and community_uid = ${ uid }
+    ORDER BY applicant asc
+  `;
+  return (claims || []);
 }
 
 export async function getCommunityClaimsByPlan(
