@@ -10,7 +10,7 @@ if [ -z "$1" ]; then
 fi
 
 # will run the Socialcap API in host port 30800 
-sudo sh ./docker/restart-api.sh $1
+sudo sh ./deploy/restart-api.sh $1
 
 # will run the Socialcap Sequencer with NO port
-sudo sh ./docker/restart-sequencer.sh $1
+sudo sh ./deploy/restart-sequencer.sh $1
