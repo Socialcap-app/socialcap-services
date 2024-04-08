@@ -15,5 +15,5 @@ sudo docker -l debug run -d --restart=always --name sc-sequencer \
   --env MAIN=main-sequencer \
   --user $(id -u www-data):$(id -g www-data) \
   -v /etc/localtime:/etc/localtime:ro \
-  -v /home/SOCIALCAP_HOME/var:/var \
+  -v /home/$SOCIALCAP_HOME/var:/var \
   socialcap/services:run
