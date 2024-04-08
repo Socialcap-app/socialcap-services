@@ -7,7 +7,7 @@
 #     ./rebuild-all.sh mainnet
 #
 if [ -z "$1" ]; then
-    echo "Error: No `branch` provided."
+    echo "Error: No branch provided."
     echo "Usage: $0 main"
     echo "   or: $0 dev"
     exit 1
