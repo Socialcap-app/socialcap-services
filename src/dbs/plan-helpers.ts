@@ -64,3 +64,29 @@ export async function changeMasterPlanState(uid: string, state: number) {
   });
   return plan ; 
 }
+
+
+/**
+ * Get all active Masterplans beloging to communities 
+ * where the user is an active member (roles: 1,2,3)
+ * and that are not yet ended.
+ */
+export async function getMyClaimableMasterPlans(userUid: string) {
+  const states = [ACTIVE];
+  const today = (new Date()).toISOString().split('T')[0]+'T23:59:59';
+  const plans = await Sql`
+    SELECT 
+      pl.uid, name, description, image, 
+      state, state_descr, 
+      starts_utc, ends_utc, pl.created_utc, updated_utc, pl.approved_utc, 
+      community, pl.community_uid, admins, 
+      pl.available,pl.fee,pl.total,
+      mm.person_uid, mm.role as member_role
+    FROM plans_view pl, members mm
+    WHERE pl.community_uid = mm.community_uid
+     AND mm.role in ('1','2','3')	
+     AND mm.person_uid = ${ userUid }
+     AND pl.state in ${ Sql(states) } and ends_utc > ${ today } 
+  `;
+  return (plans || []);
+}

@@ -3,9 +3,8 @@ import { fastify, prisma, logger } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { waitForTransaction } from "../services/mina-transactions.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
-import { getMasterPlan } from "../dbs/plan-helpers.js";
+import { getMasterPlan, getMyClaimableMasterPlans } from "../dbs/plan-helpers.js";
 import { postCreateClaimVotingAccount } from "../dbs/sequencer-helpers.js"; 
-
 
 type Claimable = {
   uid: string, // the UID of the MasterPlan ...
@@ -71,55 +70,54 @@ export async function getMyClaims(params: any) {
 
 export async function getMyClaimables(params: any) {
   const userUid = params.user.uid;
+//   // all commnunity Uids where is a a member
+//   const members = await prisma.members.findMany({
+//     where: { AND: [
+//       { personUid: { equals: userUid }}
+//     ],
+//     NOT: {
+//       role: { equals: "0"} // NOT PENDING ROLE
+//     }},    
+//   })
+//   const cuids  = members.map((t) => t.communityUid);
+//   if (! members)
+//     return hasResult([]); // no claimables as is not member in any Dao
+// 
+//   // now all the master plans in each of those communities
+//   const plans = await prisma.plan.findMany({
+//     where: { communityUid: { in: cuids } },
+//     // TODO: we should also filter by state
+//     orderBy: { name: 'asc' }
+//   })
+//   if (! plans)
+//     return hasResult([]); // no available master plan 
+//   
+//   // now we need the communities to extract some data 
+//   // because joins are not really available in Prisma
+//   // now all the master plans in each of those communities
+//   const orgs = await prisma.community.findMany({
+//     where: { uid: { in: cuids } },
+//     orderBy: { name: 'asc' }
+//   })
+// 
+//   let dictio: Map<string,any> = new Map();
+//   (orgs || []).forEach((t: any) => {
+//     dictio.set(t.uid, t);
+//   })
+  const plans = await getMyClaimableMasterPlans(userUid);
 
-  // all commnunity Uids where is a a member
-  const members = await prisma.members.findMany({
-    where: { AND: [
-      { personUid: { equals: userUid }}
-    ],
-    NOT: {
-      role: { equals: "0"} // NOT PENDING ROLE
-    }},    
-  })
-  const cuids  = members.map((t) => t.communityUid);
-  if (! members)
-    return hasResult([]); // no claimables as is not member in any Dao
-
-  // now all the master plans in each of those communities
-  const plans = await prisma.plan.findMany({
-    where: { communityUid: { in: cuids } },
-    // TODO: we should also filter by state
-    orderBy: { name: 'asc' }
-  })
-  if (! plans)
-    return hasResult([]); // no available master plan 
-  
-  // now we need the communities to extract some data 
-  // because joins are not really available in Prisma
-  // now all the master plans in each of those communities
-  const orgs = await prisma.community.findMany({
-    where: { uid: { in: cuids } },
-    orderBy: { name: 'asc' }
-  })
-
-  let dictio: Map<string,any> = new Map();
-  (orgs || []).forEach((t: any) => {
-    dictio.set(t.uid, t);
-  })
-
-  // and patch some additional data into the Claimables
+  // and patch into the Claimables
   let claimables = (plans || []).map((t: any) => {
-    let cmn = dictio.get(t.communityUid);
     return {
       uid: t.uid, // the UID of the MasterPlan ...
       communityUid: t.communityUid,
       state: t.state,
-      community: cmn.name,
+      community: t.community,
       name: t.name, 
       description: t.description,
       image: t.image,
-      startsUTC: t.startsUTC,
-      endsUTC: t.endsUTC,
+      startsUTC: t.startsUtc,
+      endsUTC: t.endsUtc,
       available: t.available,
       total: t.total,
       fee: t.fee
