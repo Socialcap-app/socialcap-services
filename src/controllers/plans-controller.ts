@@ -3,7 +3,7 @@ import { DRAFT, ACTIVE, CLAIMED, ASSIGNED, VOTING, TALLYING, DONE, CANCELED } fr
 import { fastify, prisma } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
-import { getMasterPlan, changeMasterPlanState } from "../dbs/plan-helpers.js";
+import { getMasterPlan, changeMasterPlanState, findAdminedMasterPlans } from "../dbs/plan-helpers.js";
 import { assignAllElectors } from "../services/voting-assign-electors.js";
 import { closeAllVoting } from "../services/voting-close-voting.js";
 import { processVotesBatches, TallyProcessResult } from "../services/voting-process-votes.js";
@@ -15,6 +15,14 @@ export async function getPlan(params: any) {
   data.evidence = JSON.parse(data.evidence);
   data.strategy = JSON.parse(data.strategy);
   return hasResult(data); 
+}
+
+
+export async function getAdminedMasterPlans(params: {
+  user: any,
+}) {
+  const plans = await findAdminedMasterPlans(params.user.uid)
+  return hasResult(plans);
 }
 
 
