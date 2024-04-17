@@ -68,8 +68,8 @@ model MerkleMapLeaf {
 // all serialization and deserialization must be done by the appl
 //
 model KVStore {
-  key        String   @unique /// @zod.string.max(132)
-  value      String  
+  key   String @unique /// @zod.string.max(132)
+  value String
 
   @@map("key_values")
 }
@@ -127,25 +127,13 @@ model Community {
 model Members {
   uid          String    @id @unique // is [communityUid:personUid]
   // members of this community
-  communityUid String @map("community_uid") @default("") /// @zod.string.max(32)
-  personUid    String @map("person_uid") @default("") /// @zod.string.max(32)
+  communityUid String    @default("") @map("community_uid") /// @zod.string.max(32)
+  personUid    String    @default("") @map("person_uid") /// @zod.string.max(32)
   role         String    @default("0") /// @zod.string.max(32) // 1:PLAIN, 2:VALIDATOR, 3:AUDITOR
   createdUTC   DateTime  @default(now()) @map("created_utc")
   approvedUTC  DateTime? @map("approved_utc")
 
   @@map("members")
-}
-
-model tmpx {
-  uid          String    @id @unique // is [communityUid:personUid]
-  // members of this community
-  communityUid String @map("community_uid") @default("") /// @zod.string.max(32)
-  personUid    String @map("person_uid") @default("") /// @zod.string.max(32)
-  role         String    @default("0") /// @zod.string.max(32) // 1:PLAIN, 2:VALIDATOR, 3:AUDITOR
-  createdUTC   DateTime  @default(now()) @map("created_utc")
-  approvedUTC  DateTime? @map("approved_utc")
-
-  @@map("tmpx")
 }
 
 model Claim {
@@ -229,7 +217,7 @@ model Credential {
 
 model Task {
   uid          String    @id @unique
-  planUid      String    @map("plan_uid") @default("")
+  planUid      String    @default("") @map("plan_uid")
   claimUid     String    @map("claim_uid")
   assigneeUid  String    @map("assignee_uid")
   state        Int       @default(0)
