@@ -195,9 +195,9 @@ model Credential {
   applicantId  String    @map("applicant_id")
   claimId      String    @map("claim_id")
   // the source references (redundant by useful for querying)
-  applicantUid String
-  communityUid String
-  claimUid     String
+  applicantUid String  @map("applicant_uid")
+  communityUid String  @map("community_uid")
+  claimUid     String  @map("claim_uid")
   // type & description data
   type         String?   @default("")
   description  String?   @default("")
