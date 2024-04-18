@@ -94,13 +94,14 @@ export async function findMyCommunities(userUid: string) {
   SELECT 
     cm.*,
     mm.person_uid, mm.role as member_role,
-    (select count(*) from members where community_uid=cm.uid) as countMembers,
-    (select count(*) from claims where community_uid=cm.uid) as countClaims,
-    (select count(*) from credentials where community_uid=cm.uid) as countCredentials
+    (select count(*) from members where community_uid=cm.uid) as count_members,
+    (select count(*) from claims where community_uid=cm.uid) as count_claims,
+    (select count(*) from credentials where community_uid=cm.uid) as count_credentials
   FROM communities cm, members mm
   WHERE cm.uid = mm.community_uid
    AND mm.role in ('0','1','2','3')	
    AND mm.person_uid = ${ userUid }
+  ORDER BY cm.name asc; 
   `;
   return (communities || []).map(({ 
     createdUtc,updatedUtc,approvedUTC, ...rest 
