@@ -89,10 +89,7 @@ export async function findCommunityByName(name: string) {
  * @param columns - the array of columns to retrieve
  * @returns - the array of communities
  */
-export async function findMyCommunities(
-  userUid: string,
-  columns?: string[]
-) {
+export async function findMyCommunities(userUid: string) {
   const communities = await Sql`
   SELECT 
     cm.*,
@@ -107,13 +104,11 @@ export async function findMyCommunities(
   `;
   return (communities || []).map(({ 
     createdUtc,updatedUtc,approvedUTC, ...rest 
-  }) => {
-    return { 
-      ...rest,
-      // fix column names because Sql transforms do not map them correctly
-      createdUTC: createdUtc,
-      updatedUTC: updatedUtc,
-      approvedUTC: approvedUTC,
-    }
-  })
+  }) => ({ 
+    ...rest,
+    // fix column names because Sql transforms do not map them correctly
+    createdUTC: createdUtc,
+    updatedUTC: updatedUtc,
+    approvedUTC: approvedUTC,
+  }));
 }
