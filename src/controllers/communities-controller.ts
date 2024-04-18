@@ -4,7 +4,7 @@ import { CLAIMED, DRAFT } from "@socialcap/contracts-lib";
 import { prisma } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
-import { getCommunityClaims, getCommunityCounters, getCommunityClaimsByPlan } from "../dbs/community-helpers.js";
+import { getCommunityClaims, getCommunityCounters, getCommunityClaimsByPlan, findMyCommunities } from "../dbs/community-helpers.js";
 import { CommunityMembers } from "../dbs/members-helpers.js";
 
 
@@ -90,25 +90,26 @@ export async function updateCommunity(params: any) {
 export async function getMyCommunities(params: any) {
   const userUid = params.user.uid;
 
-  const members = await prisma.members.findMany({
-    where: { personUid: userUid }
-  })
-  const cuids  = members.map((t) => t.communityUid);
-
-  let communities = await prisma.community.findMany({
-    where: { uid: { in: cuids } },
-    orderBy: { name: 'asc' }
-  })
-
-  // for each community count members and claims and credentials
-  for (let j=0; j < (communities || []).length; j++) {
-    let cm = communities[j] as any;
-    let counters = await getCommunityCounters(cm.uid);
-    cm = Object.assign(cm, counters);
-    console.log(cm.uid, cm.counters);
-    communities[j] = cm;
-  }
-
+  let communities = await findMyCommunities(userUid);
+  //   const members = await prisma.members.findMany({
+  //     where: { personUid: userUid }
+  //   })
+  //   const cuids  = members.map((t) => t.communityUid);
+  // 
+  //   let communities = await prisma.community.findMany({
+  //     where: { uid: { in: cuids } },
+  //     orderBy: { name: 'asc' }
+  //   })
+  // 
+  //   // for each community count members and claims and credentials
+  //   for (let j=0; j < (communities || []).length; j++) {
+  //     let cm = communities[j] as any;
+  //     let counters = await getCommunityCounters(cm.uid);
+  //     cm = Object.assign(cm, counters);
+  //     console.log(cm.uid, cm.counters);
+  //     communities[j] = cm;
+  //   }
+  
   return hasResult(communities);
 }
 

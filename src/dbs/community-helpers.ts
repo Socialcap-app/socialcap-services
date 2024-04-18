@@ -81,3 +81,39 @@ export async function findCommunityByName(name: string) {
   
   return communities[0]; // just return the first one we found
 }
+
+
+/**
+ * Get all communities where I am a member.
+ * @param userUid - the user UID for which we will return communities
+ * @param columns - the array of columns to retrieve
+ * @returns - the array of communities
+ */
+export async function findMyCommunities(
+  userUid: string,
+  columns?: string[]
+) {
+  const communities = await Sql`
+  SELECT 
+    cm.*,
+    mm.person_uid, mm.role as member_role,
+    (select count(*) from members where community_uid=cm.uid) as countMembers,
+    (select count(*) from claims where community_uid=cm.uid) as countClaims,
+    (select count(*) from credentials where community_uid=cm.uid) as countCredentials
+  FROM communities cm, members mm
+  WHERE cm.uid = mm.community_uid
+   AND mm.role in ('0','1','2','3')	
+   AND mm.person_uid = ${ userUid }
+  `;
+  return (communities || []).map(({ 
+    createdUtc,updatedUtc,approvedUTC, ...rest 
+  }) => {
+    return { 
+      ...rest,
+      // fix column names because Sql transforms do not map them correctly
+      createdUTC: createdUtc,
+      updatedUTC: updatedUtc,
+      approvedUTC: approvedUTC,
+    }
+  })
+}
