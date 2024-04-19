@@ -1,5 +1,5 @@
 import { UID } from "@socialcap/contracts-lib";
-import { DRAFT, ACTIVE, CLAIMED, ASSIGNED, VOTING, TALLYING, DONE, CANCELED } from "@socialcap/contracts-lib";
+import { DRAFT, ACTIVE, CLAIMED, ASSIGNED, VOTING, TALLYING, DONE, CANCELED, APPROVED, REJECTED } from "@socialcap/contracts-lib";
 import { fastify, prisma } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
@@ -7,6 +7,8 @@ import { getMasterPlan, changeMasterPlanState, findAdminedMasterPlans } from "..
 import { assignAllElectors } from "../services/voting-assign-electors.js";
 import { closeAllVoting } from "../services/voting-close-voting.js";
 import { processVotesBatches, TallyProcessResult } from "../services/voting-process-votes.js";
+import { getClaimsByPlan, updateClaimAccountId } from "../dbs/claim-helpers.js";
+import { getCommunity } from "./communities-controller.js";
 
 
 export async function getPlan(params: any) {
@@ -14,7 +16,7 @@ export async function getPlan(params: any) {
   let data = await getEntity("plan", uid);
   data.evidence = JSON.parse(data.evidence);
   data.strategy = JSON.parse(data.strategy);
-  return hasResult(data); 
+  return hasResult(data);
 }
 
 
@@ -35,7 +37,7 @@ export async function addPlan(params: any) {
   return hasResult({
     plan: rs.proved,
     transaction: rs.transaction
-  }); 
+  });
 }
 
 
@@ -50,7 +52,7 @@ export async function updatePlan(params: any) {
   return hasResult({
     plan: rs.proved,
     transaction: rs.transaction
-  }); 
+  });
 }
 
 
@@ -85,8 +87,8 @@ export async function stopClaimings(params: {
   planUid: string
   user: any,
 }) {
-  let plan = await getMasterPlan(params.planUid) ;
-  if (plan?.state !== ACTIVE) 
+  let plan = await getMasterPlan(params.planUid);
+  if (plan?.state !== ACTIVE)
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the ACTIVE state.We can stop it.`)
 
   let rs = await changeMasterPlanState(plan.uid, CLAIMED);
@@ -115,14 +117,15 @@ export async function enableVoting(params: {
   planUid: string
   user: any,
 }) {
-  let plan = await getMasterPlan(params.planUid) ;
-  if (plan?.state !== CLAIMED) 
+  let plan = await getMasterPlan(params.planUid);
+  if (plan?.state !== CLAIMED)
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the CLAIMED state.We can not assign electors to it.`)
 
   let assigned = await assignAllElectors(params.planUid);
-  if (assigned.claimsCount === 0)      
+  console.log("Assigned=", assigned);
+  if (assigned.claimsCount === 0)
     return hasError.NotFound(`Plan ${plan?.uid} has no claims.We can not assign electors to it.`)
-  if (assigned.electorsCount === 0)      
+  if (assigned.electorsCount === 0)
     return hasError.NotFound(`Plan ${plan?.uid} has no electors assigned.We can not proceed with the voting.`)
 
   let rs = await changeMasterPlanState(plan.uid, VOTING);
@@ -140,14 +143,14 @@ export async function reassignElectors(params: {
   planUid: string
   user: any,
 }) {
-  let plan = await getMasterPlan(params.planUid) ;
-  if (plan?.state !== VOTING) 
+  let plan = await getMasterPlan(params.planUid);
+  if (plan?.state !== VOTING)
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the VOTING state.We can not reassign electors to it.`)
 
   let assigned = await assignAllElectors(params.planUid);
-  if (assigned.claimsCount === 0)      
+  if (assigned.claimsCount === 0)
     return hasError.NotFound(`Plan ${plan?.uid} has no claims.We can not assign electors to it.`)
-  if (assigned.electorsCount === 0)      
+  if (assigned.electorsCount === 0)
     return hasError.NotFound(`Plan ${plan?.uid} has no electors assigned.We can not proceed with the voting.`)
 
   return hasResult({
@@ -170,13 +173,13 @@ export async function closeVoting(params: {
   planUid: string
   user: any,
 }) {
-  let plan = await getMasterPlan(params.planUid) ;
-  if (plan?.state !== VOTING) 
+  let plan = await getMasterPlan(params.planUid);
+  if (plan?.state !== VOTING)
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the VOTING state. We can not close voting.`)
 
   // services/voting-close-voting
   let done = await closeAllVoting(plan);
-  
+
   let rs = await changeMasterPlanState(plan.uid, TALLYING);
   return hasResult({
     plan: rs,
@@ -189,8 +192,8 @@ export async function reopenVoting(params: {
   planUid: string
   user: any,
 }) {
-  let plan = await getMasterPlan(params.planUid) ;
-  if (plan?.state !== TALLYING) 
+  let plan = await getMasterPlan(params.planUid);
+  if (plan?.state !== TALLYING)
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the TALLYING state. We can not reopen voting.`)
 
   let rs = await changeMasterPlanState(plan.uid, VOTING);
@@ -208,14 +211,15 @@ export async function startTally(params: {
   planUid: string
   user: any,
 }) {
-  let plan = await getMasterPlan(params.planUid) ;
-  if (plan?.state !== TALLYING) 
+  let plan = await getMasterPlan(params.planUid);
+  if (plan?.state !== TALLYING)
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the TALLYING state. We can not start counting votes.`)
 
   // COUNT VOTES HERE !!!
   let done = await processVotesBatches(plan) as TallyProcessResult;
 
   let rs = await changeMasterPlanState(plan.uid, TALLYING);
+
   return hasResult({
     plan: rs,
     processed: done
@@ -227,11 +231,12 @@ export async function closeTally(params: {
   planUid: string
   user: any,
 }) {
-  let plan = await getMasterPlan(params.planUid) ;
-  if (plan?.state !== TALLYING) 
+  let plan = await getMasterPlan(params.planUid);
+  if (plan?.state !== TALLYING)
     return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the TALLYING state. We can not close the tally.`)
 
   let rs = await changeMasterPlanState(plan.uid, DONE);
+
   return hasResult(rs)
 }
 
@@ -243,4 +248,40 @@ export async function issueCredentials(params: {
   planUid: string
   user: any,
 }) {
+  let plan = await getMasterPlan(params.planUid);
+  if (!plan)
+    return hasError.PreconditionFailed(`Plan ${params.planUid} does not exist. We can not issue credentials.`)
+  if (plan?.state !== DONE)
+    return hasError.PreconditionFailed(`Plan ${plan?.uid} is not in the DONE state. We can not issue credentials.`)
+  let commnunity = await getEntity("community", plan.communityUid);
+
+  // get approved claims
+  const claims = await getClaimsByPlan(plan.uid, { states: [APPROVED] });
+  let credentials: any[] = [];
+  claims.map(async (claim) => {
+    const credential = await prisma.credential.create({
+      data: {
+        uid: UID.uuid4(),
+        accountId: claim.accountId!,
+        applicantId: claim.applicantUid,
+        claimId: claim.accountId!,
+        applicantUid: claim.applicantUid,
+        communityUid: claim.communityUid,
+        claimUid: claim.uid,
+        type: plan?.name,
+        description: plan?.description,
+        community: commnunity?.name,
+        image: commnunity?.image,
+        alias: commnunity?.alias,
+        stars: commnunity?.stars,
+        metadata: commnunity?.metadata,
+        revocable: plan?.revocable,
+        issuedUTC: claim.issuedUTC,
+        expiresUTC: claim.dueUTC
+      },
+    });
+    console.log("Added Credential=", credential);
+    credentials.push(credential);
+  });
+  return hasResult(credentials)
 }

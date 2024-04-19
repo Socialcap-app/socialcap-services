@@ -90,7 +90,7 @@ async function assignAllElectors(planUid: string) {
   let planStrategy = JSON.parse(plan!.strategy as string);
   console.log("Strategy=", planStrategy);
   
-  let claims = await getClaimsByPlan(planUid, { states: [CLAIMED]});
+  let claims = await getClaimsByPlan(planUid, { states: [VOTING]});
 
   // we need to build a new Nullifier or update the existent one
   const claimsNullifierUid= `claim-elector-nullifier-${planUid}`;
