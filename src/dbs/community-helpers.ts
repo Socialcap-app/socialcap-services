@@ -4,6 +4,35 @@ import { CommunityMembers } from "./members-helpers.js";
 import { DRAFT, CLAIMED, IGNORED, VOTING, UNPAID, REJECTED, APPROVED } from "@socialcap/contracts-lib";
 
 
+/**
+ * Get a given community, where the user can be a member or not.
+ * @param uid - the UID of the desired community
+ * @param userUid - the user UID for checking membership
+ * @returns - the array of communities
+ */
+export async function findCommunity(uid: string, userUid: string) {
+  const communities = await Sql`
+  SELECT 
+    cm.*,
+    (select count(*) from members where community_uid=cm.uid) as count_members,
+    (select count(*) from claims where community_uid=cm.uid) as count_claims,
+    (select count(*) from credentials where community_uid=cm.uid) as count_credentials,
+    (select role from members where community_uid=cm.uid and person_uid=${userUid}) as has_role
+  FROM communities cm
+  WHERE cm.uid = ${uid}; 
+  `;
+  return (communities || []).map(({ 
+    createdUtc,updatedUtc,approvedUTC, ...rest 
+  }) => ({ 
+    ...rest,
+    // fix column names because Sql transforms do not map them correctly
+    createdUTC: createdUtc,
+    updatedUTC: updatedUtc,
+    approvedUTC: approvedUTC,
+  }));
+}
+
+
 export async function getCommunityClaims(
   uid: string, 
   members: CommunityMembers,
@@ -86,7 +115,6 @@ export async function findCommunityByName(name: string) {
 /**
  * Get all communities where I am a member.
  * @param userUid - the user UID for which we will return communities
- * @param columns - the array of columns to retrieve
  * @returns - the array of communities
  */
 export async function findMyCommunities(userUid: string) {
