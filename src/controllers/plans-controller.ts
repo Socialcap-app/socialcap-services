@@ -258,7 +258,7 @@ export async function issueCredentials(params: {
   // get approved claims
   const claims = await getClaimsByPlan(plan.uid, { states: [APPROVED] });
   let credentials: any[] = [];
-  claims.map(async (claim) => {
+  for (const claim of claims) {
     const credential = await prisma.credential.create({
       data: {
         uid: UID.uuid4(),
@@ -282,6 +282,7 @@ export async function issueCredentials(params: {
     });
     console.log("Added Credential=", credential);
     credentials.push(credential);
-  });
+  }
+
   return hasResult(credentials)
 }
