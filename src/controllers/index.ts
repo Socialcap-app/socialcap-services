@@ -1,7 +1,7 @@
 import { noActions } from "./no-actions.js";
 import { requestOtp, login } from "./sessions-controller.js";
 import { signUp, updateProfile, getProfile } from "./persons-controller.js";
-import { updateCommunity, getCommunity, getMyCommunities, getAllCommunities } from "./communities-controller.js";
+import { updateCommunity, getCommunity, getMyCommunities, getAllCommunities, checkCommunityNameExist } from "./communities-controller.js";
 import { joinCommunity, promoteMember, updateMemberRole } from "./members-controller.js";
 import { getAdminedCommunity } from "./communities-controller.js"
 import { getPlan, addPlan, updatePlan, getAdminedMasterPlans } from "./plans-controller.js";
@@ -68,4 +68,5 @@ const queryHandlers = {
   'get_credential': { fn: getCredential, authorize: false },
   'get_my_credentials': { fn: getMyCredentials, authorize: true },
   'get_nullifier': { fn: getNullifier, authorize: true },
+  'check_community_name_exist': {fn: checkCommunityNameExist, authorize: false}
 };
