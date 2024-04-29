@@ -11,17 +11,15 @@ import { CommunityMembers } from "../dbs/members-helpers.js";
 export async function getCommunity(params: any) {
   const uid = params.uid;
   let data = await getEntity("community", uid);
-  
   let counters = await getCommunityCounters(uid);
   data = Object.assign(data, counters);
 
   let members = await (new CommunityMembers()).build(uid);
   data.members = members.getAll();
   data.validators = members.getValidators();
-  
   data.claims = await getCommunityClaims(uid, members);
 
-  return hasResult(data); 
+  return hasResult(data);
 }
 
 
@@ -36,17 +34,17 @@ export async function getAdminedCommunity(params: any) {
   let data = await getEntity("community", uid);
 
   // check if user is the Admin
-  if (!(data.adminUid === params.user.uid || data.xadmins.includes(params.user.uid))) 
+  if (!(data.adminUid === params.user.uid || data.xadmins.includes(params.user.uid)))
     raiseError.ForbiddenError("Not the Admin of this community !");
 
   const plans = await prisma.plan.findMany({
-    where: { communityUid: { equals: uid }},    
+    where: { communityUid: { equals: uid } },
     orderBy: { name: 'asc' }
   })
   data.plans = plans || [];
 
   const proposed = await prisma.proposed.findMany({
-    where: { communityUid: { equals: uid }},    
+    where: { communityUid: { equals: uid } },
     orderBy: { role: 'asc' }
   })
   data.proposed = proposed || [];
@@ -60,19 +58,19 @@ export async function getAdminedCommunity(params: any) {
 
   data.claims = await getCommunityClaims(uid, members);
 
-  return hasResult(data); 
+  return hasResult(data);
 }
 
 
 export async function updateCommunity(params: any) {
-  const uid = params.new 
+  const uid = params.new
     ? UID.uuid4() // ONLY when we receive this we assign a new UID
-    : params.uid; 
+    : params.uid;
 
   let rs = await updateEntity("community", uid, params);
   let cm = rs.proved;
 
-  let memberUid = cm.uid+cm.adminUid;
+  let memberUid = cm.uid + cm.adminUid;
   await updateEntity("members", memberUid, {
     communityUid: cm.uid,
     personUid: cm.adminUid,
@@ -83,7 +81,7 @@ export async function updateCommunity(params: any) {
   return hasResult({
     community: rs.proved,
     transaction: rs.transaction
-  }); 
+  });
 }
 
 
@@ -109,7 +107,7 @@ export async function getMyCommunities(params: any) {
   //     console.log(cm.uid, cm.counters);
   //     communities[j] = cm;
   //   }
-  
+
   return hasResult(communities);
 }
 
@@ -121,11 +119,11 @@ export async function getAllCommunities(params: any) {
   const members = await prisma.members.findMany({
     where: { personUid: userUid }
   })
-  const cuids  = members.map((t) => t.communityUid);
-  
+  const cuids = members.map((t) => t.communityUid);
+
   const joined = params.notJoined ? cuids : [];
   const communities = await prisma.community.findMany({
-    where: { uid: { notIn: joined }},
+    where: { uid: { notIn: joined } },
     orderBy: { name: 'asc' }
   })
 
@@ -134,29 +132,29 @@ export async function getAllCommunities(params: any) {
 
 
 export async function prepareCommunityClaimsDownload(
-  uid: string, 
+  uid: string,
   fileName: string,
   states?: string
 ) {
   try {
     let members = await (new CommunityMembers()).build(uid);
- 
-    let claims = await getCommunityClaims(uid, members, [DRAFT,CLAIMED]) || [];
+
+    let claims = await getCommunityClaims(uid, members, [DRAFT, CLAIMED]) || [];
 
     let content = "";
 
     // if no claims we return an empty file
-    if (! claims.length) {
-      fs.writeFileSync(fileName, "", { flag: 'w+' });      
+    if (!claims.length) {
+      fs.writeFileSync(fileName, "", { flag: 'w+' });
       return true;
     }
-    
+
     // prepare headers, use first available row
     let fields = JSON.parse(claims[0].evidenceData) || [];
 
-    let headers = ['"Full Name"','"Claim Id"','"Status"'];
+    let headers = ['"Full Name"', '"Claim Id"', '"Status"'];
     fields.forEach((field: any) => {
-      if (field.type !== 'remark') 
+      if (field.type !== 'remark')
         headers.push(`"${field.label}"`);
     })
     content = content + headers.join(',') + '\n';
@@ -166,8 +164,8 @@ export async function prepareCommunityClaimsDownload(
       let fields = JSON.parse(claim.evidenceData) || [];
 
       let stateDescr;
-      if (claim.state === 1) stateDescr = "DRAFT"; 
-      if (claim.state === 4) stateDescr = "CLAIMED"; 
+      if (claim.state === 1) stateDescr = "DRAFT";
+      if (claim.state === 4) stateDescr = "CLAIMED";
 
       let values = [
         `"${claim.applicant?.fullName || ''}"`,
@@ -175,7 +173,7 @@ export async function prepareCommunityClaimsDownload(
         `"${stateDescr}"`
       ];
       fields.forEach((field: any) => {
-        if (field.type !== 'remark') 
+        if (field.type !== 'remark')
           values.push(`"${valueToString(field)}"`);
       })
 
@@ -183,9 +181,9 @@ export async function prepareCommunityClaimsDownload(
     })
 
     // write it now
-    fs.writeFileSync(fileName, content, { flag: 'w+' });      
-    
-    return true; 
+    fs.writeFileSync(fileName, content, { flag: 'w+' });
+
+    return true;
   }
   catch (err) {
     console.log(err);
@@ -201,23 +199,23 @@ export async function prepareCommunityPlanClaimsDownload(
 ) {
   try {
     let members = await (new CommunityMembers()).build(uid);
- 
-    let claims = await getCommunityClaimsByPlan(uid, planUid, members, [DRAFT,CLAIMED]) || [];
+
+    let claims = await getCommunityClaimsByPlan(uid, planUid, members, [DRAFT, CLAIMED]) || [];
 
     let content = "";
 
     // if no claims we return an empty file
-    if (! claims.length) {
-      fs.writeFileSync(fileName, "", { flag: 'w+' });      
+    if (!claims.length) {
+      fs.writeFileSync(fileName, "", { flag: 'w+' });
       return true;
     }
-    
+
     // prepare headers, use first available row
     let fields = JSON.parse(claims[0].evidenceData) || [];
 
-    let headers = ['"Full Name"','"Claim Id"','"Status"'];
+    let headers = ['"Full Name"', '"Claim Id"', '"Status"'];
     fields.forEach((field: any) => {
-      if (field.type !== 'remark') 
+      if (field.type !== 'remark')
         headers.push(`"${field.label}"`);
     })
     content = content + headers.join(',') + '\n';
@@ -227,8 +225,8 @@ export async function prepareCommunityPlanClaimsDownload(
       let fields = JSON.parse(claim.evidenceData) || [];
 
       let stateDescr;
-      if (claim.state === 1) stateDescr = "DRAFT"; 
-      if (claim.state === 4) stateDescr = "CLAIMED"; 
+      if (claim.state === 1) stateDescr = "DRAFT";
+      if (claim.state === 4) stateDescr = "CLAIMED";
 
       let values = [
         `"${claim.applicant?.fullName || ''}"`,
@@ -236,7 +234,7 @@ export async function prepareCommunityPlanClaimsDownload(
         `"${stateDescr}"`
       ];
       fields.forEach((field: any) => {
-        if (field.type !== 'remark') 
+        if (field.type !== 'remark')
           values.push(`"${valueToString(field)}"`);
       })
 
@@ -244,9 +242,9 @@ export async function prepareCommunityPlanClaimsDownload(
     })
 
     // write it now
-    fs.writeFileSync(fileName, content, { flag: 'w+' });      
-    
-    return true; 
+    fs.writeFileSync(fileName, content, { flag: 'w+' });
+
+    return true;
   }
   catch (err) {
     console.log(err);
@@ -254,17 +252,31 @@ export async function prepareCommunityPlanClaimsDownload(
   }
 }
 
+export async function checkCommunityNameExist(params: { name: string }) {
+  const { name } = params;
+  console.log("checking name exist", params)
+  if (!name || name.trim().length == 0)
+    return hasResult(false);
+  const count = await prisma.community.count(
+    {
+      where: {
+        name: name
+      }
+    });
+  return hasResult(count > 0);
+}
+
 /**
  * Helpers
  */
 function valueToString(field: any) {
-  if (['text','note','radio'].includes(field.type))
+  if (['text', 'note', 'radio'].includes(field.type))
     // @MAZ - we limit max size to 16K because of problems 
     // with some truncated fields in MINA Navigators program
-    return (field.value?.substring(0, 16384) || "").replaceAll('"',"'");
+    return (field.value?.substring(0, 16384) || "").replaceAll('"', "'");
 
-  if (['links','files','images','checks'].includes(field.type))
-    return (field.value || []).join(',').replaceAll('"',"'");
+  if (['links', 'files', 'images', 'checks'].includes(field.type))
+    return (field.value || []).join(',').replaceAll('"', "'");
 
   return "?";
 }
