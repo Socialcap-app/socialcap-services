@@ -71,9 +71,15 @@ export async function changeMasterPlanState(uid: string, state: number) {
  * where the user is an active member (roles: 1,2,3)
  * and that are not yet ended.
  */
-export async function getMyClaimableMasterPlans(userUid: string) {
+export async function getMyClaimableMasterPlans(
+  userUid: string,
+  joined: boolean
+) {
   const states = [ACTIVE];
-  const today = (new Date()).toISOString().split('T')[0]+'T23:59:59';
+  joined = (joined !== undefined) ? joined : true;
+  const today2359 = (new Date()).toISOString().split('T')[0]+'T23:59:59';
+  const today0000 = (new Date()).toISOString().split('T')[0]+'T00:00:00';
+  /*
   const plans = await Sql`
     SELECT 
       pl.uid, name, description, image, 
@@ -87,6 +93,35 @@ export async function getMyClaimableMasterPlans(userUid: string) {
      AND mm.role in ('1','2','3')	
      AND mm.person_uid = ${ userUid }
      AND pl.state in ${ Sql(states) } and ends_utc > ${ today } 
+  `;
+  **/
+  const plans = await Sql`
+    SELECT 
+      pv.uid, 
+      name as type, 
+      description, 
+      image, banner,
+      state, state_descr, 
+      starts_utc, ends_utc, 
+      pv.created_utc, updated_utc, pv.approved_utc, 
+      community, pv.community_uid, 
+      admins, 
+      pv.available,pv.fee,pv.total,
+      CASE WHEN m.community_uid IS NOT NULL THEN true ELSE false END AS joined
+    FROM 
+      plans_view pv
+      LEFT JOIN members m 
+        ON pv.community_uid = m.community_uid
+        AND m.role IN ('1', '2', '3')
+        AND m.person_uid = ${ userUid }
+    WHERE 
+      pv.state in ${ Sql(states) } 
+      AND starts_utc <= ${ today0000 } 
+      AND ends_utc > ${ today2359 } 
+      ${ joined 
+        ? Sql` AND m.community_uid IS NOT NULL`
+        : Sql``
+      }
   `;
   return (plans || []);
 }

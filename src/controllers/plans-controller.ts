@@ -4,12 +4,28 @@ import { fastify, prisma } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 import { getMasterPlan, changeMasterPlanState, findAdminedMasterPlans } from "../dbs/plan-helpers.js";
+import { getMyClaimableMasterPlans } from "../dbs/plan-helpers.js";
 import { assignAllElectors } from "../services/voting-assign-electors.js";
 import { closeAllVoting } from "../services/voting-close-voting.js";
 import { processVotesBatches, TallyProcessResult } from "../services/voting-process-votes.js";
 import { getClaimsByPlan, updateClaimAccountId } from "../dbs/claim-helpers.js";
 import { getCommunity } from "./communities-controller.js";
 
+interface Claimable {
+  uid: string; // the UID of the MasterPlan ...
+  communityUid: string;
+  state: number;
+  community: string;
+  type: string; // this is the Masterplan name, used as 'type' in Credentials
+  description: string;
+  image: string;
+  startsUTC: string;
+  endsUTC: string;
+  available: number;
+  total: number;
+  fee: number;
+  joined: boolean;
+}
 
 export async function getPlan(params: any) {
   const uid = params.uid;
@@ -53,6 +69,46 @@ export async function updatePlan(params: any) {
     plan: rs.proved,
     transaction: rs.transaction
   });
+}
+
+
+/**
+ * Get all ACTIVE Masterplans, filtered by the "joined" state.
+ * Either all the active ones, or the ones the ones from joined communities.
+ * @param params.joined - If false returns ALL, if true the ones I have joined
+ * @returns - Masterplans list
+ */
+export async function getClaimableMasterPlans(params: {
+  joined?: boolean,
+  user: any
+}) {
+  const userUid = params.user.uid;
+  const plans = await getMyClaimableMasterPlans(
+    userUid,
+    (params.joined !== undefined) ? params.joined : true
+  );
+
+  // and patch into the Claimables
+  let claimables = (plans || []).map((t: any) => {
+    return {
+      uid: t.uid, // the UID of the MasterPlan ...
+      communityUid: t.communityUid,
+      state: t.state,
+      community: t.community,
+      type: t.type, 
+      description: t.description,
+      image: t.image,
+      banner: t.banner, // Masterplans have avatars AND banners
+      startsUTC: t.startsUtc,
+      endsUTC: t.endsUtc,
+      available: t.available,
+      total: t.total,
+      fee: t.fee,
+      joined: t.joined
+    } as Claimable;
+  })
+
+  return hasResult(claimables);
 }
 
 

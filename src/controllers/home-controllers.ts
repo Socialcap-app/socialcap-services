@@ -4,7 +4,8 @@ import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 
 import { getMyCommunities, getAllCommunities } from "./communities-controller.js";
-import { getMyClaimables, getMyClaims } from "./claims-controller.js";
+import { getMyClaims } from "./claims-controller.js";
+import { getClaimableMasterPlans } from "./plans-controller.js";
 import { getMyTasks } from "./tasks-controller.js";
 import { getMyCredentials } from "./credentials-controller.js";
 
@@ -12,7 +13,7 @@ export async function getMyHome(params: any) {
 
   console.log("getMyHome",params);
 
-  const claimables = await getMyClaimables(params);
+  const claimables = await getClaimableMasterPlans(params);
   const credentials = await getMyCredentials(params);
   const claimed = await getMyClaims(params);
   const tasks = await getMyTasks(params);

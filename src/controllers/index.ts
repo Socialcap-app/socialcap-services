@@ -5,14 +5,14 @@ import { updateCommunity, getCommunity, getMyCommunities, getAllCommunities, che
 import { joinCommunity, promoteMember, updateMemberRole } from "./members-controller.js";
 import { getAdminedCommunity } from "./communities-controller.js"
 import { getPlan, addPlan, updatePlan, getAdminedMasterPlans } from "./plans-controller.js";
-import { getClaim, getMyClaimables, getMyClaims, addClaim, updateClaim, 
+import { getClaim, getMyClaims, addClaim, updateClaim, 
   updateClaimState, submitClaim, getRunningClaims } from "./claims-controller.js";
 import { getTask, getMyTasks, getNullifier, submitTask, submitTasksBatch } from "./tasks-controller.js";
 import { getCredential, getMyCredentials } from "./credentials-controller.js";
 import { queryEmptySet } from "./empty-set.js"
 import { getMyHome } from "./home-controllers.js";
 import { enableVoting, stopClaimings, reassignElectors, closeVoting, reopenVoting } from "./plans-controller.js"; 
-import { startTally, closeTally, issueCredentials } from "./plans-controller.js"; 
+import { getClaimableMasterPlans, startTally, closeTally, issueCredentials } from "./plans-controller.js"; 
 
 export { 
   queryHandlers,
@@ -60,7 +60,7 @@ const queryHandlers = {
   'get_admined_plans': { fn: getAdminedMasterPlans, authorize: true},
   // 'get_my_credentials': {  fn: getClaimables, authorize: true },
   'get_my_claims': {  fn: getMyClaims, authorize: true },
-  'get_my_claimables': {  fn: getMyClaimables, authorize: true },
+  'get_my_claimables': {  fn: getClaimableMasterPlans, authorize: true },
   'get_running_claims': {  fn: getRunningClaims, authorize: true },
   'get_claim': {  fn: getClaim, authorize: true },
   'get_task': { fn: getTask, authorize: true },
