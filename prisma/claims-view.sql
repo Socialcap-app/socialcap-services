@@ -5,6 +5,7 @@ DROP VIEW public.claims_view;
 CREATE OR REPLACE VIEW public.claims_view
  AS
  SELECT cl.uid,
+    cl.account_id,
     cl.state,
     st.label AS state_descr,
     pe.full_name AS applicant,
@@ -18,7 +19,7 @@ CREATE OR REPLACE VIEW public.claims_view
     cl.positive_votes,
     cl.negative_votes,
     cl.ignored_votes,
-	cl.evidence_data
+  	cl.evidence_data
    FROM claims cl,
     persons pe,
     communities cm,
