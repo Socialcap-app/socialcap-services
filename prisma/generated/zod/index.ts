@@ -26,11 +26,9 @@ export const CommunityScalarFieldEnumSchema = z.enum(['uid','accountId','adminUi
 
 export const MembersScalarFieldEnumSchema = z.enum(['uid','communityUid','personUid','role','createdUTC','approvedUTC']);
 
-export const TmpxScalarFieldEnumSchema = z.enum(['uid','communityUid','personUid','role','createdUTC','approvedUTC']);
-
 export const ClaimScalarFieldEnumSchema = z.enum(['uid','communityUid','applicantUid','planUid','state','accountId','alias','createdUTC','updatedUTC','votedUTC','issuedUTC','dueUTC','requiredVotes','requiredPositives','positiveVotes','negativeVotes','ignoredVotes','evidenceData']);
 
-export const PlanScalarFieldEnumSchema = z.enum(['uid','communityUid','state','name','alias','description','image','template','evidence','strategy','createdUTC','updatedUTC','approvedUTC','fee','rewardsShare','communityShare','protocolShare','total','available','expiration','revocable','startsUTC','endsUTC']);
+export const PlanScalarFieldEnumSchema = z.enum(['uid','communityUid','state','name','alias','description','image','template','evidence','strategy','createdUTC','updatedUTC','approvedUTC','fee','payedBy','rewardsShare','communityShare','protocolShare','total','available','expiration','revocable','startsUTC','endsUTC','votingStartsUTC','votingEndsUTC']);
 
 export const CredentialScalarFieldEnumSchema = z.enum(['uid','accountId','applicantId','claimId','applicantUid','communityUid','claimUid','type','description','community','image','alias','stars','metadata','revocable','issuedUTC','expiresUTC']);
 
@@ -230,32 +228,6 @@ export const MembersPartialSchema = MembersSchema.partial()
 export type MembersPartial = z.infer<typeof MembersPartialSchema>
 
 /////////////////////////////////////////
-// TMPX SCHEMA
-/////////////////////////////////////////
-
-export const tmpxSchema = z.object({
-  uid: z.string(),
-  communityUid: z.string().max(32),
-  personUid: z.string().max(32),
-  /**
-   * // 1:PLAIN, 2:VALIDATOR, 3:AUDITOR
-   */
-  role: z.string().max(32),
-  createdUTC: z.coerce.date(),
-  approvedUTC: z.coerce.date().nullish(),
-})
-
-export type tmpx = z.infer<typeof tmpxSchema>
-
-/////////////////////////////////////////
-// TMPX PARTIAL SCHEMA
-/////////////////////////////////////////
-
-export const tmpxPartialSchema = tmpxSchema.partial()
-
-export type tmpxPartial = z.infer<typeof tmpxPartialSchema>
-
-/////////////////////////////////////////
 // CLAIM SCHEMA
 /////////////////////////////////////////
 
@@ -309,6 +281,7 @@ export const PlanSchema = z.object({
   updatedUTC: z.coerce.date(),
   approvedUTC: z.coerce.date().nullish(),
   fee: z.number().int().nullish(),
+  payedBy: z.number().int().nullish(),
   rewardsShare: z.number().int().nullish(),
   communityShare: z.number().int().nullish(),
   protocolShare: z.number().int().nullish(),
@@ -318,6 +291,8 @@ export const PlanSchema = z.object({
   revocable: z.boolean().nullish(),
   startsUTC: z.coerce.date().nullish(),
   endsUTC: z.coerce.date().nullish(),
+  votingStartsUTC: z.coerce.date().nullish(),
+  votingEndsUTC: z.coerce.date().nullish(),
 })
 
 export type Plan = z.infer<typeof PlanSchema>

@@ -160,29 +160,34 @@ model Claim {
 }
 
 model Plan {
-  uid            String    @id @unique
-  communityUid   String    @map("community_uid")
-  state          Int
-  name           String    @default("")
-  alias          String?
-  description    String?   @default("")
-  image          String?   @default("")
-  template       String?   @default("")
-  evidence       String?   @default("[]")
-  strategy       String?   @default("{}")
-  createdUTC     DateTime  @default(now()) @map("created_utc")
-  updatedUTC     DateTime  @default(now()) @map("updated_utc")
-  approvedUTC    DateTime? @map("approved_utc")
-  fee            Int?      @default(0)
-  rewardsShare   Int?      @default(0) @map("rewards_share")
-  communityShare Int?      @default(0) @map("community_share")
-  protocolShare  Int?      @default(0) @map("protocol_share")
-  total          Int?      @default(1)
-  available      Int?      @default(1)
-  expiration     Int?      @default(0)
-  revocable      Boolean?  @default(false)
-  startsUTC      DateTime? @map("starts_utc")
-  endsUTC        DateTime? @map("ends_utc")
+  uid             String    @id @unique
+  communityUid    String    @map("community_uid")
+  state           Int
+  name            String    @default("")
+  alias           String?
+  description     String?   @default("")
+  image           String?   @default("")
+  template        String?   @default("")
+  evidence        String?   @default("[]")
+  strategy        String?   @default("{}")
+  createdUTC      DateTime  @default(now()) @map("created_utc")
+  updatedUTC      DateTime  @default(now()) @map("updated_utc")
+  approvedUTC     DateTime? @map("approved_utc")
+  fee             Int?      @default(0)
+  payedBy         Int?      @default(1) @map("payed_by") // 1: Applicant 2: Community 3: Socialcap
+  rewardsShare    Int?      @default(0) @map("rewards_share")
+  communityShare  Int?      @default(0) @map("community_share")
+  protocolShare   Int?      @default(0) @map("protocol_share")
+  total           Int?      @default(1)
+  available       Int?      @default(1)
+  expiration      Int?      @default(0)
+  revocable       Boolean?  @default(false)
+  // claiming start and end dates 
+  startsUTC       DateTime? @map("starts_utc")
+  endsUTC         DateTime? @map("ends_utc")
+  // voting start and end dates 
+  votingStartsUTC DateTime? @map("voting_starts_utc")
+  votingEndsUTC   DateTime? @map("voting_ends_utc")
 
   @@map("plans")
 }
@@ -195,9 +200,9 @@ model Credential {
   applicantId  String    @map("applicant_id")
   claimId      String    @map("claim_id")
   // the source references (redundant by useful for querying)
-  applicantUid String  @map("applicant_uid")
-  communityUid String  @map("community_uid")
-  claimUid     String  @map("claim_uid")
+  applicantUid String    @map("applicant_uid")
+  communityUid String    @map("community_uid")
+  claimUid     String    @map("claim_uid")
   // type & description data
   type         String?   @default("")
   description  String?   @default("")
