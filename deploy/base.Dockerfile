@@ -21,7 +21,7 @@ COPY ./.env /services/.env
 RUN cd /services
 RUN npm i 
 RUN npm i @socialcap/contracts
-RUN npm i @socialcap/contracts-lib
+RUN npm i @socialcap/contracts-lib@0.1.17
 RUN npm i @socialcap/batch-voting
 RUN npm i @socialcap/claim-voting
 
