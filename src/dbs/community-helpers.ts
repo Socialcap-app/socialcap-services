@@ -96,7 +96,8 @@ export async function findMyCommunities(userUid: string) {
     mm.person_uid, mm.role as member_role,
     (select count(*) from members where community_uid=cm.uid) as count_members,
     (select count(*) from claims where community_uid=cm.uid) as count_claims,
-    (select count(*) from credentials where community_uid=cm.uid) as count_credentials
+    (select count(*) from credentials where community_uid=cm.uid) as count_credentials,
+    (select count(*) from plans where community_uid=cm.uid and state=8) as count_claimables
   FROM communities cm, members mm
   WHERE cm.uid = mm.community_uid
    AND mm.role in ('0','1','2','3')	
@@ -112,4 +113,38 @@ export async function findMyCommunities(userUid: string) {
     updatedUTC: updatedUtc,
     approvedUTC: approvedUTC,
   }));
+}
+
+
+export async function findCommunityByUid(uid: string, userUid: string) {
+  const communities = await Sql`
+    SELECT 
+      cm.*,
+      (select count(*) from members where community_uid=cm.uid) as count_members,
+      (select count(*) from claims where community_uid=cm.uid) as count_claims,
+      (select count(*) from credentials where community_uid=cm.uid) as count_credentials,
+      (select count(*) from plans where community_uid=cm.uid and state=8) as count_claimables,
+      (select count(*) from members where cm.uid=community_uid and person_uid=${ userUid }) as is_member,
+      CASE
+        WHEN concat(cm.xadmins,',',cm.admin_uid) ilike ${ '%'+userUid+'%' } 
+        THEN true
+        ELSE false
+      END AS is_admin
+    FROM 
+      communities cm
+    WHERE 
+      cm.uid = ${ uid }
+    ORDER BY 
+      cm.name asc;
+  `;
+  const patched = (communities || []).map(({ 
+    createdUtc,updatedUtc,approvedUTC, ...rest 
+  }) => ({ 
+    ...rest,
+    // fix column names because Sql transforms do not map them correctly
+    createdUTC: createdUtc,
+    updatedUTC: updatedUtc,
+    approvedUTC: approvedUTC,
+  }));
+  return patched.length ? patched[0] : null; // just return the first one we found
 }

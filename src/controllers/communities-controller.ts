@@ -4,7 +4,8 @@ import { CLAIMED, DRAFT } from "@socialcap/contracts-lib";
 import { prisma } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
-import { getCommunityClaims, getCommunityCounters, getCommunityClaimsByPlan, findMyCommunities } from "../dbs/community-helpers.js";
+import { getCommunityClaims, getCommunityCounters, getCommunityClaimsByPlan } from "../dbs/community-helpers.js";
+import { findMyCommunities, findCommunityByUid } from "../dbs/community-helpers.js";
 import { CommunityMembers } from "../dbs/members-helpers.js";
 
 /**
@@ -17,21 +18,31 @@ import { CommunityMembers } from "../dbs/members-helpers.js";
 export async function getCommunity(params: {
   uid: string,
   extras?: boolean,
+  user: any
 }) {
   const uid = params.uid;
-  let data = await getEntity("community", uid);
-  let counters = await getCommunityCounters(uid);
-  data = Object.assign(data, counters);
+  const userUid = params.user.uid;
+
+  let data = await findCommunityByUid(uid, userUid)
+  if (!data) return hasError.NotFound(`Community ${uid} does no exist.`)
 
   const extras = (params.extras === undefined || params.extras === true);
   if (!extras) return hasResult(data);
 
+  /*
+  let data = await getEntity("community", uid);
+  let counters = await getCommunityCounters(uid);
+  data = Object.assign(data, counters);
+  */
+
   // if extras we include members, claims and validators in response
+  /*
   let members = await (new CommunityMembers()).build(uid);
   data.members = members.getAll();
   data.validators = members.getValidators();
   data.claims = await getCommunityClaims(uid, members);
   return hasResult(data);
+  */
 }
 
 
