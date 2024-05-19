@@ -2,6 +2,7 @@ import { UID } from "@socialcap/contracts-lib";
 //import { CLAIMED, WAITING, UNPAID, VOTING } from "@socialcap/collections";
 import { fastify, prisma, logger } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
+import { getCredentialsInCommunity } from "../dbs/credential-helpers.js";
 // import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 
 
@@ -31,6 +32,21 @@ export async function getMyCredentials(params: any) {
   if (! credentials) 
     return hasResult([]);
 
+  return hasResult(credentials);
+}
+
+
+export async function getCommunityCredentials(params: {
+  communityUid: string,
+  user: any
+}) {
+  const userUid = params.user.uid;
+  const communityUid: string = params.communityUid;
+
+  // all commnunity Uids where is a a member
+  const credentials = await getCredentialsInCommunity(
+    communityUid
+  )
   return hasResult(credentials);
 }
 

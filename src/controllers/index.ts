@@ -8,7 +8,7 @@ import { getPlan, addPlan, updatePlan, getAdminedMasterPlans } from "./plans-con
 import { getClaim, getMyClaims, addClaim, updateClaim, 
   updateClaimState, submitClaim, getRunningClaims } from "./claims-controller.js";
 import { getTask, getMyTasks, getNullifier, submitTask, submitTasksBatch } from "./tasks-controller.js";
-import { getCredential, getMyCredentials } from "./credentials-controller.js";
+import { getCredential, getMyCredentials, getCommunityCredentials } from "./credentials-controller.js";
 import { queryEmptySet } from "./empty-set.js"
 import { getMyHome } from "./home-controllers.js";
 import { enableVoting, stopClaimings, reassignElectors, closeVoting, reopenVoting } from "./plans-controller.js"; 
@@ -68,6 +68,7 @@ const queryHandlers = {
   'get_my_tasks': { fn: getMyTasks, authorize: true },
   'get_credential': { fn: getCredential, authorize: false },
   'get_my_credentials': { fn: getMyCredentials, authorize: true },
+  'get_community_credentials': { fn: getCommunityCredentials, authorize: true },
   'get_nullifier': { fn: getNullifier, authorize: true },
   'check_community_name_exist': {fn: checkCommunityNameExist, authorize: false}
 };
