@@ -1,11 +1,13 @@
 import { Person, Members } from "@prisma/client";
 import { logger, prisma } from "../global.js";
+import Sql from "./sql-helpers.js";
 
 export {
   getValidators, 
   getAuditors,
   getAllMembers,
-  CommunityMembers
+  CommunityMembers,
+  getMembersInCommunity
 }
 
 const 
@@ -124,4 +126,32 @@ async function getAuditors(communityUid: string): Promise<any[]> {
 
 async function getAllMembers(communityUid: string): Promise<any[]> {
   return await getMembersWithRoles(communityUid, [PLAIN, VALIDATORS, AUDITORS]) ;
+}
+
+
+async function getMembersInCommunity(
+  communityUid: string, 
+  options?: {
+    roles?: string[]
+    states?: string[]
+  }
+): Promise<any[]> {
+  const members = await Sql`
+    SELECT *
+    FROM 
+      members_view 
+    WHERE 
+      community_uid = ${ communityUid }
+    ORDER BY 
+      full_name asc;  
+  `;
+  let patched = (members || []).map((t: any) => {
+    let tp = t;
+    tp.approvedUTC = t.approvedUtc;
+    tp.createdUTC = t.createdUtc;
+    delete tp.approvedUtc;
+    delete tp.createdUtc; 
+    return tp;
+  })
+  return patched;
 }

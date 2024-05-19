@@ -2,7 +2,7 @@ import { noActions } from "./no-actions.js";
 import { requestOtp, login } from "./sessions-controller.js";
 import { signUp, updateProfile, getProfile } from "./persons-controller.js";
 import { updateCommunity, getCommunity, getMyCommunities, getAllCommunities, checkCommunityNameExist } from "./communities-controller.js";
-import { joinCommunity, promoteMember, updateMemberRole } from "./members-controller.js";
+import { joinCommunity, promoteMember, updateMemberRole, getMembers } from "./members-controller.js";
 import { getAdminedCommunity } from "./communities-controller.js"
 import { getPlan, addPlan, updatePlan, getAdminedMasterPlans } from "./plans-controller.js";
 import { getClaim, getMyClaims, addClaim, updateClaim, 
@@ -55,6 +55,7 @@ const queryHandlers = {
   'get_community': { fn: getCommunity, authorize: true },
   'get_my_communities': { fn: getMyCommunities, authorize: true },
   'get_all_communities': { fn: getAllCommunities, authorize: true },
+  'get_members':  { fn: getMembers, authorize: true },
   'get_admined_community':  {  fn: getAdminedCommunity, authorize: true },
   'get_plan':  {  fn: getPlan, authorize: true },
   'get_admined_plans': { fn: getAdminedMasterPlans, authorize: true},

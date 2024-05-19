@@ -2,6 +2,7 @@ import { UID } from "@socialcap/contracts-lib";
 import { fastify, prisma } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
 import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
+import { getMembersInCommunity } from "../dbs/members-helpers.js";
 
 
 export async function joinCommunity(params: any) {
@@ -87,3 +88,28 @@ export async function promoteMember(params: any) {
     transaction: rsm.transaction
   }); 
 }
+
+
+/**
+ * Get the list of all the members of a given community
+ * @param params.communityUid - UID of the required community
+ * @param params.options - additional options
+ * @param params.options.roles - filter by this roles, including admin
+ * @param params.options.states - filter by the user states 
+ * @returns A list of Member
+ */
+export async function getMembers(params: {
+  communityUid: string, 
+  options?: {
+    roles?: string[],
+    states?: string[]
+  }  
+}) {
+  let members = await getMembersInCommunity(
+    params.communityUid, 
+    params.options
+  );
+  return hasResult(members);
+}
+
+
