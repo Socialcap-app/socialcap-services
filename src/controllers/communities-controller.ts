@@ -7,18 +7,30 @@ import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 import { getCommunityClaims, getCommunityCounters, getCommunityClaimsByPlan, findMyCommunities } from "../dbs/community-helpers.js";
 import { CommunityMembers } from "../dbs/members-helpers.js";
 
-
-export async function getCommunity(params: any) {
+/**
+ * Get a specific community
+ * @param params - the request 'params'
+ * @param params.uid - `uuid` of the required community
+ * @param params.extras - if `true` includes claims, validators and members in response, default is `true`
+ * @returns A community object which may optionally include claims, validators and members
+ */
+export async function getCommunity(params: {
+  uid: string,
+  extras?: boolean,
+}) {
   const uid = params.uid;
   let data = await getEntity("community", uid);
   let counters = await getCommunityCounters(uid);
   data = Object.assign(data, counters);
 
+  const extras = (params.extras === undefined || params.extras === true);
+  if (!extras) return hasResult(data);
+
+  // if extras we include members, claims and validators in response
   let members = await (new CommunityMembers()).build(uid);
   data.members = members.getAll();
   data.validators = members.getValidators();
   data.claims = await getCommunityClaims(uid, members);
-
   return hasResult(data);
 }
 
