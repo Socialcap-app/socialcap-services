@@ -205,11 +205,17 @@ export async function submitTasksBatch(params: {
   logger.info(`BatchVoteNullifier created uid=${batch.uid} root=${nullifier.root()}`);
 
   // finally send the Batch to MINA
-  let txn = await postReceiveVotesBatch(batch.uid, senderAccountId, signedPack);
+  /* TODO: activate latter
+  let txn = await postReceiveVotesBatch(
+    batch.uid, 
+    senderAccountId, 
+    signedPack
+  );
+  */
 
   return hasResult({
     tasks: tasks,
-    transaction: txn //
+    transaction: "" //
   })
 }
 

@@ -107,6 +107,7 @@ async function updateEntity(
 
   // we just update the merkle map and get an Updated struct with leafs 
   // before the update and after the update was done
+  // TODO PHASE2: use Protokit for collections
   let {map, updated} = await updateMerkleMap(entityType, provable);
 
   // now we start the MINA transaction, BUT we do not really wait for it,

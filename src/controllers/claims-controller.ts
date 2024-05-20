@@ -75,7 +75,7 @@ export async function getRunningClaims(params: any) {
  * Mutations
  */
 export async function addClaim(params: any) {
-  const uid = UID.uuid4(); // a new plan
+  const uid = UID.uuid4();
   params.new = true;
 
   params.evidenceData = JSON.stringify(params.evidenceData || "[]");
@@ -93,9 +93,37 @@ export async function addClaim(params: any) {
 export async function updateClaim(params: any) {
   const uid = params.uid;
 
+  let previous = await getEntity("claim", uid);
+
   params.evidenceData = JSON.stringify(params.evidenceData || "[]");
   params.state = parseInt(params.state || 1);
   let rs = await updateEntity("claim", uid, params);
+
+  // check if we need to submit it 
+  // and if it was not already submitted
+  if (previous.state !== params.state && params.state === CLAIMED) {
+    let claim = rs.proved;
+
+    let plan = await getMasterPlan(claim.planUid);
+    let strategy = plan?.strategy ? JSON.parse(plan?.strategy) : {};
+  
+    // we will add it to the ClaimsQueue for latter processing
+    let txn: any = null;
+
+    // we dont need to wait for payment, so we mark it as CLAIMED right now
+    // the voting process will be started latter
+    //claim.state = CLAIMED; 
+    //rs = await updateEntity("claim", uid, claim);
+
+    // if we don't have a created MINA account for this claim
+    // we need to create it by dispatching the transaction 
+    if (!claim.accountId) {
+      txn = await postCreateClaimVotingAccount({
+        claimUid: uid, 
+        strategy: strategy
+      });
+    }
+  }
 
   return hasResult({
     claim: rs.proved,
