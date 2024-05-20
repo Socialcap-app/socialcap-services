@@ -3,7 +3,7 @@
   "name": "Socialcap API",
   "plugin": ["typedoc-plugin-markdown"],
   // "plugin": ["typedoc-plugin-merge-modules"],
-  "entryPoints": ["./src/controllers", "./src/dbs"],
+  "entryPoints": ["./src/controllers/communities-controller.ts"],
   "exclude": ["./src/controllers/empty-set.ts", "./src/controllers/no-actions.ts"],
   "entryPointStrategy": "expand", 
   // "entryPointStrategy": "resolve", 

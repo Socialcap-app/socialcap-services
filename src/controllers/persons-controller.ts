@@ -9,7 +9,7 @@ import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
 /**
  * signUp
  * Starts the onboarding process for a new user.
- * @param params Object: { email, ... }
+ * @param params Object: { email, phone, telegram }
  * @returns MutationResult
  */
 export async function signUp(params: {
