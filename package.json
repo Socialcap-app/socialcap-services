@@ -18,7 +18,8 @@
     "build": "tsc",
     "buildw": "tsc --watch",
     "format": "prettier --write --ignore-unknown **/*",
-    "lint": "npx eslint src/* --fix"
+    "lint": "npx eslint src/* --fix",
+    "db-seed": "tsc prisma/no-seed.ts && cat prisma/no-seed.js | node --input-type=\"commonjs\" && rm prisma/no-seed.js"
   },
   "lint-staged": {
     "**/*": [
