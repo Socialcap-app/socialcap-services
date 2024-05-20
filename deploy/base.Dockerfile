@@ -20,10 +20,10 @@ COPY ./.env /services/.env
 
 RUN cd /services
 RUN npm i 
-RUN npm i @socialcap/contracts
+RUN npm i @socialcap/contracts@0.1.30
 RUN npm i @socialcap/contracts-lib@0.1.17
-RUN npm i @socialcap/batch-voting
-RUN npm i @socialcap/claim-voting
+RUN npm i @socialcap/batch-voting@0.1.6
+RUN npm i @socialcap/claim-voting@0.1.9
 
 RUN npx prisma generate
 #RUN npx prisma migrate dev
