@@ -8,16 +8,18 @@ import { getCredentialsInCommunity } from "../dbs/credential-helpers.js";
 
 export async function getCredential(params: any) {
   let uid = params.uid;
-  
-  //let data = await getEntity("credential", uid);
-  let data = await prisma.credential.findUnique({ 
+
+  let credential = await prisma.credential.findUnique({
     where: { uid: uid }
   });
-  if (!data) raiseError.DatabaseEngine(
+  if (!credential) raiseError.DatabaseEngine(
     `Could not found Credential uid=${uid}`
   )
+  const applicant = await prisma.person.findUnique({
+    where: { uid: credential?.applicantId },
+  });
 
-  return hasResult(data); 
+  return hasResult({ ...credential, applicant: applicant?.fullName });
 }
 
 export async function getMyCredentials(params: any) {
@@ -26,13 +28,24 @@ export async function getMyCredentials(params: any) {
 
   // all commnunity Uids where is a a member
   const credentials = await prisma.credential.findMany({
-    where: { applicantUid: userUid, uid: communityUid  },
+    where: { applicantUid: userUid, uid: communityUid },
     orderBy: { issuedUTC: 'desc' }
   })
-  if (! credentials) 
+  if (!credentials)
     return hasResult([]);
 
-  return hasResult(credentials);
+  const applicant = await prisma.person.findUnique({
+    where: { uid: userUid },
+  });
+
+  let result = (credentials || []).map((c) => (
+    {
+      applicant: applicant?.fullName,
+      ...c,
+    }
+  ))
+
+  return hasResult(result);
 }
 
 
