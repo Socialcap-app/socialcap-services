@@ -1,4 +1,4 @@
-import { PrivateKey, PublicKey, Field, fetchAccount, MerkleMapWitness } from "o1js";
+import { PrivateKey, PublicKey, Field, fetchAccount, MerkleMapWitness, MerkleWitness } from "o1js";
 import { DONE, UID, ASSIGNED, sliced, VOTING } from "@socialcap/contracts-lib";
 import { ClaimElectorNullifier, ClaimElectorNullifierLeaf, ClaimVotingContract } from "@socialcap/claim-voting";
 import { BatchVoteNullifierWitness, BatchVoteNullifier, BatchVoteNullifierLeaf } from '@socialcap/batch-voting';
@@ -8,7 +8,6 @@ import { getJSON, saveJSON } from "../../dbs/nullifier-helpers.js";
 import { RawTxnData, SequencerLogger as log, AnyDispatcher, TxnResult, Sender } from "../core/index.js"
 import { AnyPayer, findPayer } from "./payers.js";
 import { WORKER_ERROR, UNRESOLVED_ERROR, NOT_FOUND, hasException, IError, IResult } from "../core/error-codes.js";
-import { networkConfig } from "o1js/dist/node/lib/fetch.js";
 
 export { SendClaimVoteDispatcher };
 
@@ -49,7 +48,7 @@ function assertIsInBatch(
   batchWitness: BatchVoteNullifierWitness
 ) {
   let leafValue = BatchVoteNullifierLeaf.value(electorPuk, claimUid, vote);
-  let recalculatedRoot = batchWitness.calculateRoot(leafValue);
+  let recalculatedRoot = (batchWitness as any).calculateRoot(leafValue);
   console.log(`assertBatch=${batchRoot.toString() === recalculatedRoot.toString()} batchRoot=${sliced(batchRoot.toString())} recalculatedRoot=${sliced(recalculatedRoot.toString())}`);
   recalculatedRoot.assertEquals(batchRoot);  
 }

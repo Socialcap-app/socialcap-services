@@ -8,6 +8,7 @@ import { getJSON } from "../dbs/nullifier-helpers.js";
 import { getClaimsByPlan } from "../dbs/claim-helpers.js";
 import { getBatchesByPlan, SignedVote, unpackSignedData } from "../dbs/batch-helpers.js";
 import { delay } from "./test-helpers.js";
+import { BaseMerkleWitness } from 'o1js/dist/node/lib/merkle-tree.js';
 
 // the test plan in testdb0
 // MINA Navigators
@@ -47,7 +48,7 @@ function assertIsInBatch(
   batchWitness: BatchVoteNullifierWitness
 ) {
   let leafValue = BatchVoteNullifierLeaf.value(electorPuk, claimUid, vote);
-  let recalculatedRoot = batchWitness.calculateRoot(leafValue);
+  let recalculatedRoot = (batchWitness as any).calculateRoot(leafValue);
   console.log(`assertBatch=${batchRoot.toString() === recalculatedRoot.toString()} batchRoot=${sliced(batchRoot.toString())} recalculatedRoot=${sliced(recalculatedRoot.toString())}`);
   recalculatedRoot.assertEquals(batchRoot);  
 }
