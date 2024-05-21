@@ -11,6 +11,10 @@ export async function getClaim(uid: string) {
   let data = await prisma.claim.findUnique({ where: { uid: uid }});
   return data; 
 }
+export async function findClaim(uid: string) {
+  let data = await prisma.claim.findUnique({ where: { uid: uid }});
+  return data; 
+}
 
 /**
  * Gets all claim instance data that are in a voting state (CLAIMED).

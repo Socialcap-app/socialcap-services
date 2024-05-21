@@ -1,9 +1,53 @@
+import { Mina, PublicKey, fetchAccount } from "o1js";
 import { UID } from "@socialcap/contracts-lib";
 //import { CLAIMED, WAITING, UNPAID, VOTING } from "@socialcap/collections";
 import { fastify, prisma, logger } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
-import { getCredentialsInCommunity } from "../dbs/credential-helpers.js";
+import { getCredentialsInCommunity, findCredentialTransactions } from "../dbs/credential-helpers.js";
+import { findClaim } from "../dbs/claim-helpers.js";
+import { ClaimVotingContract } from "@socialcap/claim-voting";
 // import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
+
+
+export interface OnchainCredentialData{
+  chain: string; // devnet, berkeley, mainnet, zeko, ...
+  address: string; // address of the zkApp claim account
+  applicantUid: string;
+  requiredQuorum: number;
+  requiredPositives: number;
+  positives:  bigint;
+  negatives:  bigint;
+  ignored:  bigint;
+  transactions: {
+    uid: string;
+    type: string;
+    sequence: bigint;
+    hash: string;
+    createdUTC: string;
+    status: string;
+    url: string;
+  }[];
+}
+
+let VerificationKey: any | null = null;
+
+async function isCompiled(vk: any | null): Promise<any | null> {
+  if (!vk) {
+    // TODO: use cache !
+    try {
+      let t0 = Date.now()
+      const compiled = await ClaimVotingContract.compile();
+      vk = compiled.verificationKey;
+      let dt = (Date.now() - t0)/1000;
+      console.log(`Compiled time=${dt}secs`);
+      return vk;
+    }
+    catch (err) {
+      throw Error("Unable to compile ClaimVotingContract contract");
+    }
+  }
+  return vk;
+}
 
 
 export async function getCredential(params: any) {
@@ -19,6 +63,89 @@ export async function getCredential(params: any) {
 
   return hasResult(data); 
 }
+
+
+/**
+ * Get the Onchain (settled on MINA) info for this credential
+ * @param params 
+ * @param params.claimUid - UID of the claim that proved the credential
+ * @param params.user - the user requesting it, extracted from the JWT token
+ * @returns An OnchainCredentialData object with requested info
+ */
+export async function getCredentialOnchainData(params: {
+  claimUid: string, 
+  user: any
+}) {
+  let { claimUid, user } = params;
+  
+  let transactions = await findCredentialTransactions(claimUid);
+    
+  if (!(transactions || []).length) 
+    raiseError.NotFound(`No transactions found for this claimUid=${claimUid}`);
+
+  // the first transaction is allways the CREATE_CLAIM 
+  let created = transactions.filter((t) => {
+    return t.type === 'CREATE_CLAIM_VOTING_ACCOUNT'
+  });
+  let createData = JSON.parse(created[0].data);
+ 
+  // set the Mina instance
+  let Network = Mina.Network({
+    mina: process.env.MINA_PROXY as string, 
+    archive: process.env.MINA_ARCHIVE as string
+  });
+  Mina.setActiveInstance(Network);
+  
+  // check if account already exists
+  let address = createData.claimAddress;
+  /*
+  let hasAccount = await fetchAccount(address);
+  if (!hasAccount) 
+    raiseError.NotFound(`No Account found for this claimUid=${claimUid}`);
+  
+  // now create the zkApp so we can query it 
+  VerificationKey = await isCompiled(VerificationKey);
+  let zkapp = new ClaimVotingContract(PublicKey.fromBase58(address));
+
+  // get state vars
+  let positives = zkapp.positive.get();
+  let negatives = zkapp.negative.get();
+  let ignored = zkapp.ignored.get();
+  */
+  let claim = await findClaim(claimUid);
+  if (!claim) 
+    raiseError.NotFound(`No claim found for this uid=${claimUid}`);
+
+  // prepare data 
+  let onchainData = {
+    chain: 'berkeley',
+    address: address,
+    url: `https://minascan.io/berkeley/account/${address}/txs?type=zk-acc`,
+    requiredQuorum: createData.strategy.requiredVotes,
+    requiredPositives: createData.strategy.requiredPositives,
+    applicantUid: claim?.applicantUid,
+    positives: claim?.positiveVotes,
+    negatives: claim?.negativeVotes,
+    ignored: claim?.ignoredVotes,
+    transactions: (transactions || []).map((t) => {
+      return {
+        uid: t.uid,
+        type: (
+          t.type === 'CREATE_CLAIM_VOTING_ACCOUNT' ? 'Created' : 
+          t.type === 'SEND_CLAIM_VOTE' ? 'Vote' : ''
+        ),  
+        sequence: t.sequence,
+        hash: t.txnHash,
+        createdUTC: t.receivedUTC,
+        status: t.stateDescr,
+        url: `https://minascan.io/berkeley/tx/${t.txnHash}?type=zk-tx`
+      }
+    })
+  }
+
+  return hasResult(onchainData); 
+}
+
 
 export async function getMyCredentials(params: any) {
   const userUid = params.user.uid;
