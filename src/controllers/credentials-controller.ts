@@ -12,6 +12,7 @@ import { ClaimVotingContract } from "@socialcap/claim-voting";
 export interface OnchainCredentialData{
   chain: string; // devnet, berkeley, mainnet, zeko, ...
   address: string; // address of the zkApp claim account
+  claimUid: string;
   applicantUid: string;
   requiredQuorum: number;
   requiredPositives: number;
@@ -119,6 +120,7 @@ export async function getCredentialOnchainData(params: {
   // prepare data 
   let onchainData = {
     chain: 'berkeley',
+    claimUid: claimUid,
     address: address,
     url: `https://minascan.io/berkeley/account/${address}/txs?type=zk-acc`,
     requiredQuorum: createData.strategy.requiredVotes,
