@@ -3,7 +3,7 @@ import { UID } from "@socialcap/contracts-lib";
 //import { CLAIMED, WAITING, UNPAID, VOTING } from "@socialcap/collections";
 import { fastify, prisma, logger } from "../global.js";
 import { hasError, hasResult, raiseError } from "../responses.js";
-import { getCredentialsInCommunity, findCredentialTransactions } from "../dbs/credential-helpers.js";
+import { getCredentialsInCommunity, findCredentialTransactions, getCredentialByUid, getUserCredentials } from "../dbs/credential-helpers.js";
 import { findClaim } from "../dbs/claim-helpers.js";
 import { ClaimVotingContract } from "@socialcap/claim-voting";
 // import { updateEntity, getEntity } from "../dbs/any-entity-helpers.js";
@@ -54,17 +54,12 @@ async function isCompiled(vk: any | null): Promise<any | null> {
 export async function getCredential(params: any) {
   let uid = params.uid;
 
-  let credential = await prisma.credential.findUnique({
-    where: { uid: uid }
-  });
+  let credential = await getCredentialByUid(uid);
   if (!credential) raiseError.DatabaseEngine(
     `Could not found Credential uid=${uid}`
   )
-  const applicant = await prisma.person.findUnique({
-    where: { uid: credential?.applicantId },
-  });
 
-  return hasResult({ ...credential, applicant: applicant?.fullName });
+  return hasResult(credential);
 }
 
 
@@ -80,7 +75,6 @@ export async function getCredentialOnchainData(params: {
   user: any
 }) {
   let { claimUid, user } = params;
-  
   let transactions = await findCredentialTransactions(claimUid);
     
   if (!(transactions || []).length) 
@@ -153,28 +147,11 @@ export async function getCredentialOnchainData(params: {
 
 export async function getMyCredentials(params: any) {
   const userUid = params.user.uid;
-  const communityUid: string | undefined = params.communityUid;
 
-  // all commnunity Uids where is a a member
-  const credentials = await prisma.credential.findMany({
-    where: { applicantUid: userUid, uid: communityUid },
-    orderBy: { issuedUTC: 'desc' }
-  })
-  if (!credentials)
-    return hasResult([]);
-
-  const applicant = await prisma.person.findUnique({
-    where: { uid: userUid },
-  });
-
-  let result = (credentials || []).map((c) => (
-    {
-      applicant: applicant?.fullName,
-      ...c,
-    }
-  ))
-
-  return hasResult(result);
+  const credentials = await getUserCredentials(
+    userUid
+  )
+  return hasResult(credentials);
 }
 
 

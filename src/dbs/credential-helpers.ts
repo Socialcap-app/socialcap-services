@@ -3,9 +3,16 @@ import Sql from "./sql-helpers.js";
 
 export {
   getCredentialsInCommunity,
-  findCredentialTransactions
+  findCredentialTransactions,
+  getCredentialByUid,
+  getUserCredentials
 }
 
+/**
+ * Get all credentials issued by a community
+ * @param communityUid - UID of the community 
+ * @returns An array of credentials
+ */
 async function getCredentialsInCommunity(
   communityUid: string,
 ): Promise<any[]> {
@@ -14,7 +21,7 @@ async function getCredentialsInCommunity(
     FROM 
       credentials_view 
     WHERE 
-      community_uid = ${ communityUid }
+      community_uid = ${communityUid}
     ORDER BY 
       applicant asc;  
   `;
@@ -24,10 +31,66 @@ async function getCredentialsInCommunity(
     tp.expiresUTC = t.expiration;
     tp.type = t.name;
     delete tp.issuedUtc;
-    delete tp.expiration; 
+    delete tp.expiration;
     return tp;
   })
   return patched;
+}
+
+/**
+ * Get all user credentials
+ * @param userUid - UID of the user 
+ * @returns An array of credentials
+ */
+async function getUserCredentials(
+  userUid: string,
+): Promise<any[]> {
+  const credentials = await Sql`
+    SELECT *
+    FROM 
+      credentials_view 
+    WHERE 
+      applicant_uid = ${userUid}
+    ORDER BY 
+      issued_utc desc;  
+  `;
+  let patched = (credentials || []).map((t: any) => {
+    let tp = t;
+    tp.issuedUTC = t.issuedUtc;
+    tp.expiresUTC = t.expiration;
+    tp.type = t.name;
+    delete tp.issuedUtc;
+    delete tp.expiration;
+    return tp;
+  })
+  return patched;
+}
+
+/**
+ * Get credential by UID
+ * @param uid - UID of the claim 
+ * @returns A credential object
+ */
+async function getCredentialByUid(
+  uid: string,
+): Promise<any> {
+  const result = await Sql`
+    SELECT *
+    FROM 
+      credentials_view 
+    WHERE 
+      uid = ${uid}
+    LIMIT 1;  
+  `;
+  if (result.length == 0) return {};
+  let credential = result[0];
+  credential.issuedUTC = credential.issuedUtc;
+  credential.expiresUTC = credential.expiration;
+  credential.type = credential.name;
+  delete credential.issuedUtc;
+  delete credential.expiration;
+
+  return credential;
 }
 
 
@@ -44,13 +107,14 @@ async function findCredentialTransactions(
     FROM 
       transactions_view 
     WHERE 
-      queue = ${ 'claim-'+claimUid }
+      queue = ${'claim-' + claimUid}
     ORDER BY 
       sequence asc;  
   `;
-  return (transactions || []).map(({ 
-    receivedUtc,submitedUtc,doneUtc, ...rest 
-  }) => ({ 
+  console.log("findCredentialTransactions", transactions);
+  return (transactions || []).map(({
+    receivedUtc, submitedUtc, doneUtc, ...rest
+  }) => ({
     ...rest,
     // fix column names because Sql transforms do not map them correctly
     receivedUTC: receivedUtc,
