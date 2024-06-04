@@ -126,7 +126,7 @@ class TransactionsQueue {
       uid: tx.uid,
       type: tx.type,
       state: tx.state,
-      hash: tx.hash,
+      hash: tx.txnHash,
       data: JSON.parse(tx.data || "{}")
     }
   }
@@ -165,7 +165,7 @@ class TransactionsQueue {
       uid: tx.uid,
       type: tx.type,
       state: tx.state,
-      hash: tx.hash,
+      hash: tx.txnHash,
       data: JSON.parse(tx.data || "{}"),
       ts: tsd ? Date.parse(tsd.toISOString()) : undefined
     }
