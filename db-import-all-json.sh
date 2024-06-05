@@ -6,13 +6,17 @@
 export DATE=$(date +'%Y%m%d')
 export BUILD=build/src/tools
 export DATADIR=/tmp
-export LOG=$DATADIR/import-$DATE.log
+export LOG=$DATADIR/import.log
 
 # compile 
 npm run build
 
 # completely rebuild schema and reset db
 npx prisma migrate reset
+npx prisma migrate dev
+
+# run fixes and add non-prisma views
+sh prisma/update-patches.sh dev
 
 # run all import scripts
 node $BUILD/import-json.js $DATADIR/merkle_maps.json merkleMap > $LOG
@@ -32,4 +36,4 @@ node $BUILD/import-json.js $DATADIR/transaction_events.json transactionEvent >> 
 node $BUILD/import-json.js $DATADIR/states.json state >> $LOG
 
 # just to be sure :-)
-cat $LOG
+#cat $LOG

@@ -256,8 +256,8 @@ model Batch {
   metadata        String    @default("{}") // JSON string of this batch metadata 
   signerAccountId String    @map("signer_account_id") // the signer Public key who submitted this batch
   signedData      String    @default("") @map("signed_data") // JSON string of received signed data
-  signatureField  String    @default("") @map("signed_signature") // Signature 
-  signatureScalar String    @default("") @map("signed_scalar")
+  signatureField  String    @default("") @map("signature_field") // Signature 
+  signatureScalar String    @default("") @map("signature_scalar")
   commitment      String    @default("") // the commited Root of the batch MerkleTree (after being processed)
   size            Int       @default(0) // Total number of votes received in this batch
   state           Int       @default(9) // Processing state of the Batch 9: "WAITING", 10: "DONE", 11: "IGNORED" 19: "REJECTED"

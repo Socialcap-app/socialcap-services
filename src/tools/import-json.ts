@@ -34,6 +34,12 @@ async function importJsonFile(
   path: string,
   tableName: string 
 ) {
+  console.log(`\n\nImporting table: '${tableName}' from: '${path}'`);
+  if (!prismaTable[tableName]) {
+    console.log(`Error: No such table name: ${tableName}`)
+    return; 
+  }
+
   try {
     const rl = readline.createInterface({
       input: fs.createReadStream(path, 'utf8')
@@ -42,8 +48,11 @@ async function importJsonFile(
     let j = 0;
     rl.on('line', async (line) => {
       j++;
-      // console.log(`Analyzing ${n}: ${line}\n\n`);
+      // console.log(`Analyzing ${j}: ${line}\n\n`);
       let data = JSON.parse(line);
+
+      if (data['signed_signature']) 
+        console.log(`Analyzing ${j}: ${line} ERROR contains signed_signature\n\n`);
 
       // the received 'data' has its props in snakeCase, 
       // and also '_utc' needs to be converted to '_UTC',
@@ -66,7 +75,7 @@ async function importJsonFile(
       console.log(`Inserted row: ${j} into table: '${tableName}'`)
     });
   } catch (error) {
-    //console.log(error)
+    console.log(error)
   }
 }
 
@@ -92,5 +101,5 @@ async function main(args: string[]) {
 }
 
 main(process.argv.slice(2)).catch((error) => {
-  // console.error(error);
+  console.error(error);
 });

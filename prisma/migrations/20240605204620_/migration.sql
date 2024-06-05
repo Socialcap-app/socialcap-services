@@ -205,8 +205,8 @@ CREATE TABLE "batches" (
     "metadata" TEXT NOT NULL DEFAULT '{}',
     "signer_account_id" TEXT NOT NULL,
     "signed_data" TEXT NOT NULL DEFAULT '',
-    "signed_signature" TEXT NOT NULL DEFAULT '',
-    "signed_scalar" TEXT NOT NULL DEFAULT '',
+    "signature_field" TEXT NOT NULL DEFAULT '',
+    "signature_scalar" TEXT NOT NULL DEFAULT '',
     "commitment" TEXT NOT NULL DEFAULT '',
     "size" INTEGER NOT NULL DEFAULT 0,
     "state" INTEGER NOT NULL DEFAULT 9,
@@ -303,6 +303,3 @@ CREATE UNIQUE INDEX "transaction_queues_uid_key" ON "transaction_queues"("uid");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "transaction_events_sequence_key" ON "transaction_events"("sequence");
-
--- AddForeignKey
-ALTER TABLE "merkle_map_leaf" ADD CONSTRAINT "merkle_map_leaf_merkle_map_id_fkey" FOREIGN KEY ("merkle_map_id") REFERENCES "merkle_map"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
