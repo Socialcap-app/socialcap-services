@@ -12,13 +12,13 @@ import type { Prisma } from '@prisma/client';
 
 export const TransactionIsolationLevelSchema = z.enum(['ReadUncommitted','ReadCommitted','RepeatableRead','Serializable']);
 
-export const MerkleMapScalarFieldEnumSchema = z.enum(['id','name','root','size','height','createdUtc','updatedUtc']);
+export const MerkleMapScalarFieldEnumSchema = z.enum(['id','name','root','size','height','createdUTC','updatedUTC']);
 
-export const MerkleMapLeafScalarFieldEnumSchema = z.enum(['uid','mapId','index','key','hash','data','createdUtc','updatedUtc']);
+export const MerkleMapLeafScalarFieldEnumSchema = z.enum(['uid','mapId','index','key','hash','data','createdUTC','updatedUTC']);
 
 export const KVStoreScalarFieldEnumSchema = z.enum(['key','value']);
 
-export const SessionScalarFieldEnumSchema = z.enum(['uid','otp','email','createdUtc','updatedUtc']);
+export const SessionScalarFieldEnumSchema = z.enum(['uid','otp','email','createdUTC','updatedUTC']);
 
 export const PersonScalarFieldEnumSchema = z.enum(['uid','accountId','state','fullName','description','image','email','phone','telegram','preferences','createdUTC','updatedUTC','approvedUTC']);
 
@@ -36,11 +36,11 @@ export const TaskScalarFieldEnumSchema = z.enum(['uid','planUid','claimUid','ass
 
 export const ProposedScalarFieldEnumSchema = z.enum(['uid','role','personUid','communityUid','createdUTC']);
 
-export const BatchScalarFieldEnumSchema = z.enum(['uid','sequence','type','metadata','signerAccountId','signedData','signatureField','signatureScalar','commitment','size','state','submitedUTC','doneUTC','BatchesAccountId','BatchReceivedTxnUid','BatchesCommitedTxnUid']);
+export const BatchScalarFieldEnumSchema = z.enum(['uid','sequence','type','metadata','signerAccountId','signedData','signatureField','signatureScalar','commitment','size','state','submitedUTC','doneUTC','batchesAccountId','batchReceivedTxnUid','batchesCommitedTxnUid']);
 
 export const StateScalarFieldEnumSchema = z.enum(['id','label']);
 
-export const TransactionQueueScalarFieldEnumSchema = z.enum(['uid','sequence','queue','type','data','state','receivedUTC','submitedUTC','retriedUTC','doneUTC','retries','hash','done','error']);
+export const TransactionQueueScalarFieldEnumSchema = z.enum(['uid','sequence','queue','type','data','state','receivedUTC','submitedUTC','retriedUTC','doneUTC','retries','txnHash','txnDone','txnError']);
 
 export const TransactionEventScalarFieldEnumSchema = z.enum(['sequence','type','subject','payload','state','emittedUTC']);
 
@@ -63,8 +63,8 @@ export const MerkleMapSchema = z.object({
   root: z.bigint(),
   size: z.number().int(),
   height: z.number().int(),
-  createdUtc: z.coerce.date(),
-  updatedUtc: z.coerce.date(),
+  createdUTC: z.coerce.date(),
+  updatedUTC: z.coerce.date(),
 })
 
 export type MerkleMap = z.infer<typeof MerkleMapSchema>
@@ -88,8 +88,8 @@ export const MerkleMapLeafSchema = z.object({
   key: z.string(),
   hash: z.string(),
   data: z.string().nullish(),
-  createdUtc: z.coerce.date(),
-  updatedUtc: z.coerce.date(),
+  createdUTC: z.coerce.date(),
+  updatedUTC: z.coerce.date(),
 })
 
 export type MerkleMapLeaf = z.infer<typeof MerkleMapLeafSchema>
@@ -129,8 +129,8 @@ export const SessionSchema = z.object({
   uid: z.string().max(36),
   otp: z.string().min(6).max(8),
   email: z.string().email().min(5).max(128),
-  createdUtc: z.coerce.date(),
-  updatedUtc: z.coerce.date(),
+  createdUTC: z.coerce.date(),
+  updatedUTC: z.coerce.date(),
 })
 
 export type Session = z.infer<typeof SessionSchema>
@@ -407,9 +407,9 @@ export const BatchSchema = z.object({
   state: z.number().int(),
   submitedUTC: z.coerce.date(),
   doneUTC: z.coerce.date().nullish(),
-  BatchesAccountId: z.string().nullish(),
-  BatchReceivedTxnUid: z.string().nullish(),
-  BatchesCommitedTxnUid: z.string().nullish(),
+  batchesAccountId: z.string().nullish(),
+  batchReceivedTxnUid: z.string().nullish(),
+  batchesCommitedTxnUid: z.string().nullish(),
 })
 
 export type Batch = z.infer<typeof BatchSchema>
@@ -457,9 +457,9 @@ export const TransactionQueueSchema = z.object({
   retriedUTC: z.coerce.date().nullish(),
   doneUTC: z.coerce.date().nullish(),
   retries: z.number().int(),
-  hash: z.string(),
-  done: z.string(),
-  error: z.string(),
+  txnHash: z.string(),
+  txnDone: z.string(),
+  txnError: z.string(),
 })
 
 export type TransactionQueue = z.infer<typeof TransactionQueueSchema>

@@ -38,10 +38,10 @@ model MerkleMap {
   root       BigInt
   size       Int
   height     Int
-  createdUtc DateTime @default(now()) @map("created_utc")
-  updatedUtc DateTime @updatedAt @map("updated_utc")
+  createdUTC DateTime @default(now()) @map("created_utc")
+  updatedUTC DateTime @updatedAt @map("updated_utc")
 
-  leafs MerkleMapLeaf[] @relation(name: "map_leafs")
+  // leafs MerkleMapLeaf[] @relation(name: "map_leafs")
 
   @@map("merkle_map")
 }
@@ -53,11 +53,10 @@ model MerkleMapLeaf {
   key        String // a Bigint
   hash       String // a Bigint
   data       String? // JSON stringified, optional because we can use just the Hash
-  createdUtc DateTime @default(now()) @map("created_utc")
-  updatedUtc DateTime @updatedAt @map("updated_utc")
-
+  createdUTC DateTime @default(now()) @map("created_utc")
+  updatedUTC DateTime @updatedAt @map("updated_utc")
   // Many to one relation: MarkleMapLeaf belongs to MerkleMap
-  map MerkleMap @relation(name: "map_leafs", fields: [mapId], references: [id])
+  // map MerkleMap @relation(name: "map_leafs", fields: [mapId], references: [id])
 
   @@map("merkle_map_leaf")
 }
@@ -81,8 +80,8 @@ model Session {
   uid        String   @id @unique @default(uuid()) /// @zod.string.max(36)
   otp        String /// @zod.string.min(6).max(8)
   email      String /// @zod.string.email().min(5).max(128)
-  createdUtc DateTime @default(now()) @map("created_utc")
-  updatedUtc DateTime @default(now()) @map("updated_utc")
+  createdUTC DateTime @default(now()) @map("created_utc")
+  updatedUTC DateTime @default(now()) @map("updated_utc")
 
   @@map("sessions")
 }
@@ -257,8 +256,8 @@ model Batch {
   metadata        String    @default("{}") // JSON string of this batch metadata 
   signerAccountId String    @map("signer_account_id") // the signer Public key who submitted this batch
   signedData      String    @default("") @map("signed_data") // JSON string of received signed data
-  signatureField  String    @default("") @map("signed_signature") // Signature 
-  signatureScalar String    @default("") @map("signed_scalar")
+  signatureField  String    @default("") @map("signature_field") // Signature 
+  signatureScalar String    @default("") @map("signature_scalar")
   commitment      String    @default("") // the commited Root of the batch MerkleTree (after being processed)
   size            Int       @default(0) // Total number of votes received in this batch
   state           Int       @default(9) // Processing state of the Batch 9: "WAITING", 10: "DONE", 11: "IGNORED" 19: "REJECTED"
@@ -266,9 +265,9 @@ model Batch {
   doneUTC         DateTime? @map("done_utc") // the final processed time
 
   // Mina transactions info 
-  BatchesAccountId      String? @default("") @map("batches_account_id") // The BatchesContract account id
-  BatchReceivedTxnUid   String? @default("") @map("batch_received_txn_uid") // the batch submited transaction, as stored in TransactionQueues 
-  BatchesCommitedTxnUid String? @default("") @map("batches_commited_txn_uid") // the merge transsaction, as stored in TransactionQueues 
+  batchesAccountId      String? @default("") @map("batches_account_id") // The BatchesContract account id
+  batchReceivedTxnUid   String? @default("") @map("batch_received_txn_uid") // the batch submited transaction, as stored in TransactionQueues 
+  batchesCommitedTxnUid String? @default("") @map("batches_commited_txn_uid") // the merge transsaction, as stored in TransactionQueues 
 
   @@map("batches")
 }
@@ -296,9 +295,9 @@ model TransactionQueue {
 
   // MINA transaction info, either final success status or errors 
   // as returned by the Graphql endpoint used to check it
-  hash  String @default("") @map("txn_hash") // 
-  done  String @default("") @map("txn_done") // 
-  error String @default("") @map("txn_error") // 
+  txnHash  String @default("") @map("txn_hash") // 
+  txnDone  String @default("") @map("txn_done") // 
+  txnError String @default("") @map("txn_error") // 
 
   @@map("transaction_queues")
 }

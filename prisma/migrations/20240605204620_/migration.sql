@@ -26,6 +26,12 @@ CREATE TABLE "merkle_map_leaf" (
 );
 
 -- CreateTable
+CREATE TABLE "key_values" (
+    "key" TEXT NOT NULL,
+    "value" TEXT NOT NULL
+);
+
+-- CreateTable
 CREATE TABLE "sessions" (
     "uid" TEXT NOT NULL,
     "otp" TEXT NOT NULL,
@@ -67,6 +73,7 @@ CREATE TABLE "communities" (
     "created_utc" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_utc" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "approved_utc" TIMESTAMP(3),
+    "xadmins" TEXT DEFAULT '',
 
     CONSTRAINT "communities_pkey" PRIMARY KEY ("uid")
 );
@@ -74,11 +81,11 @@ CREATE TABLE "communities" (
 -- CreateTable
 CREATE TABLE "members" (
     "uid" TEXT NOT NULL,
-    "communityUid" TEXT NOT NULL,
-    "personUid" TEXT NOT NULL,
+    "community_uid" TEXT NOT NULL DEFAULT '',
+    "person_uid" TEXT NOT NULL DEFAULT '',
     "role" TEXT NOT NULL DEFAULT '0',
     "created_utc" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "approvedUTC" TIMESTAMP(3),
+    "approved_utc" TIMESTAMP(3),
 
     CONSTRAINT "members_pkey" PRIMARY KEY ("uid")
 );
@@ -123,6 +130,7 @@ CREATE TABLE "plans" (
     "updated_utc" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "approved_utc" TIMESTAMP(3),
     "fee" INTEGER DEFAULT 0,
+    "payed_by" INTEGER DEFAULT 1,
     "rewards_share" INTEGER DEFAULT 0,
     "community_share" INTEGER DEFAULT 0,
     "protocol_share" INTEGER DEFAULT 0,
@@ -132,6 +140,8 @@ CREATE TABLE "plans" (
     "revocable" BOOLEAN DEFAULT false,
     "starts_utc" TIMESTAMP(3),
     "ends_utc" TIMESTAMP(3),
+    "voting_starts_utc" TIMESTAMP(3),
+    "voting_ends_utc" TIMESTAMP(3),
 
     CONSTRAINT "plans_pkey" PRIMARY KEY ("uid")
 );
@@ -142,9 +152,9 @@ CREATE TABLE "credentials" (
     "credential_id" TEXT NOT NULL,
     "applicant_id" TEXT NOT NULL,
     "claim_id" TEXT NOT NULL,
-    "applicantUid" TEXT NOT NULL,
-    "communityUid" TEXT NOT NULL,
-    "claimUid" TEXT NOT NULL,
+    "applicant_uid" TEXT NOT NULL,
+    "community_uid" TEXT NOT NULL,
+    "claim_uid" TEXT NOT NULL,
     "type" TEXT DEFAULT '',
     "description" TEXT DEFAULT '',
     "community" TEXT DEFAULT '',
@@ -162,6 +172,7 @@ CREATE TABLE "credentials" (
 -- CreateTable
 CREATE TABLE "tasks" (
     "uid" TEXT NOT NULL,
+    "plan_uid" TEXT NOT NULL DEFAULT '',
     "claim_uid" TEXT NOT NULL,
     "assignee_uid" TEXT NOT NULL,
     "state" INTEGER NOT NULL DEFAULT 0,
@@ -170,6 +181,7 @@ CREATE TABLE "tasks" (
     "due_utc" TIMESTAMP(3),
     "rewarded" INTEGER DEFAULT 0,
     "reason" INTEGER DEFAULT 0,
+    "result" TEXT DEFAULT '7',
 
     CONSTRAINT "tasks_pkey" PRIMARY KEY ("uid")
 );
@@ -184,6 +196,71 @@ CREATE TABLE "proposeds" (
 
     CONSTRAINT "proposeds_pkey" PRIMARY KEY ("uid")
 );
+
+-- CreateTable
+CREATE TABLE "batches" (
+    "uid" TEXT NOT NULL,
+    "sequence" SERIAL NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'NONE',
+    "metadata" TEXT NOT NULL DEFAULT '{}',
+    "signer_account_id" TEXT NOT NULL,
+    "signed_data" TEXT NOT NULL DEFAULT '',
+    "signature_field" TEXT NOT NULL DEFAULT '',
+    "signature_scalar" TEXT NOT NULL DEFAULT '',
+    "commitment" TEXT NOT NULL DEFAULT '',
+    "size" INTEGER NOT NULL DEFAULT 0,
+    "state" INTEGER NOT NULL DEFAULT 9,
+    "submited_utc" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "done_utc" TIMESTAMP(3),
+    "batches_account_id" TEXT DEFAULT '',
+    "batch_received_txn_uid" TEXT DEFAULT '',
+    "batches_commited_txn_uid" TEXT DEFAULT '',
+
+    CONSTRAINT "batches_pkey" PRIMARY KEY ("uid")
+);
+
+-- CreateTable
+CREATE TABLE "states" (
+    "id" INTEGER NOT NULL,
+    "label" TEXT NOT NULL DEFAULT '',
+
+    CONSTRAINT "states_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "transaction_queues" (
+    "uid" TEXT NOT NULL,
+    "sequence" SERIAL NOT NULL,
+    "queue" TEXT NOT NULL DEFAULT '',
+    "type" TEXT NOT NULL DEFAULT '',
+    "data" TEXT NOT NULL DEFAULT '{}',
+    "state" INTEGER NOT NULL DEFAULT 9,
+    "received_utc" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "submited_utc" TIMESTAMP(3),
+    "retried_utc" TIMESTAMP(3),
+    "done_utc" TIMESTAMP(3),
+    "retries" INTEGER NOT NULL DEFAULT 0,
+    "txn_hash" TEXT NOT NULL DEFAULT '',
+    "txn_done" TEXT NOT NULL DEFAULT '',
+    "txn_error" TEXT NOT NULL DEFAULT '',
+
+    CONSTRAINT "transaction_queues_pkey" PRIMARY KEY ("uid")
+);
+
+-- CreateTable
+CREATE TABLE "transaction_events" (
+    "sequence" SERIAL NOT NULL,
+    "type" TEXT NOT NULL DEFAULT '',
+    "subject" TEXT NOT NULL DEFAULT '',
+    "payload" TEXT NOT NULL DEFAULT '{}',
+    "state" INTEGER DEFAULT 9,
+    "emitted_utc" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "transaction_events_pkey" PRIMARY KEY ("sequence")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "key_values_key_key" ON "key_values"("key");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "sessions_uid_key" ON "sessions"("uid");
@@ -215,5 +292,14 @@ CREATE UNIQUE INDEX "tasks_uid_key" ON "tasks"("uid");
 -- CreateIndex
 CREATE UNIQUE INDEX "proposeds_uid_key" ON "proposeds"("uid");
 
--- AddForeignKey
-ALTER TABLE "merkle_map_leaf" ADD CONSTRAINT "merkle_map_leaf_merkle_map_id_fkey" FOREIGN KEY ("merkle_map_id") REFERENCES "merkle_map"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- CreateIndex
+CREATE UNIQUE INDEX "batches_uid_key" ON "batches"("uid");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "states_id_key" ON "states"("id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "transaction_queues_uid_key" ON "transaction_queues"("uid");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "transaction_events_sequence_key" ON "transaction_events"("sequence");
