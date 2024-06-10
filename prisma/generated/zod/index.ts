@@ -44,7 +44,7 @@ export const TransactionQueueScalarFieldEnumSchema = z.enum(['uid','sequence','q
 
 export const TransactionEventScalarFieldEnumSchema = z.enum(['sequence','type','subject','payload','state','emittedUTC']);
 
-export const NotificationScalarFieldEnumSchema = z.enum(['uid','sequence','scope','type','subjectUid','text','state','metadata','createdUTC']);
+export const NotificationScalarFieldEnumSchema = z.enum(['uid','sequence','scope','type','subject','memo','state','metadata','createdUTC']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 
@@ -506,8 +506,8 @@ export const NotificationSchema = z.object({
   sequence: z.number().int(),
   scope: z.string(),
   type: z.string(),
-  subjectUid: z.string(),
-  text: z.string(),
+  subject: z.string(),
+  memo: z.string(),
   state: z.number().int(),
   metadata: z.string(),
   createdUTC: z.coerce.date().nullish(),
