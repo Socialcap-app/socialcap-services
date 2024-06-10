@@ -14,7 +14,7 @@ import { queryEmptySet } from "./empty-set.js"
 import { getMyHome } from "./home-controllers.js";
 import { enableVoting, stopClaimings, reassignElectors, closeVoting, reopenVoting } from "./plans-controller.js"; 
 import { getClaimableMasterPlans, startTally, closeTally, issueCredentials } from "./plans-controller.js"; 
-import { postNotification, getMyNotifications } from "./notifications-controller.js";
+import { getMyNotifications } from "./notifications-controller.js";
 
 export { 
   queryHandlers,
@@ -47,8 +47,7 @@ const mutationHandlers = {
   'reopen_voting': { fn: reopenVoting, authorize: true},
   'start_tally': { fn: startTally, authorize: true},
   'close_tally': { fn: closeTally, authorize: true},
-  'issue_credentials': { fn: issueCredentials, authorize: true},
-  'post_notification': { fn: postNotification, authorize: true},
+  'issue_credentials': { fn: issueCredentials, authorize: true}
 }
 
 const queryHandlers = {
