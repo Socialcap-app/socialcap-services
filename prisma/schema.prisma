@@ -315,3 +315,30 @@ model TransactionEvent {
 
   @@map("transaction_events")
 }
+
+// The Notifications list
+model Notification {
+  // Uid of this notification, not really used but necessary 
+  // because we need and Uid for each entity
+  uid         String    @id @unique
+  // order (auto) in which the notification was received 
+  sequence    Int    @default(autoincrement())
+  // scope for this notification: all, group, personal
+  scope       String    @default("private")
+  // type of the notified activity: transaction, message, request
+  type        String    @default("message")
+  // subject that will receive the notification (or '')
+  // depends on the scope
+  subject  String    @default("") @map("subject")
+  // text message, can contain HTML codes to improve readability 
+  memo        String    @default("")
+  // state of the activity: NONE, WAITING, DONE, UNPAID
+  state       Int       @default(0)
+  // metadata in JSON format for the given activity, it will be deserialized
+  // by the users of the notification and may change depending on 'type' 
+  metadata    String    @default("{}")
+  // when the activity was created (UTC)
+  createdUTC  DateTime? @default(now()) @map("created_utc")
+
+  @@map("notifications")
+}

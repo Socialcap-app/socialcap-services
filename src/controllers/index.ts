@@ -14,6 +14,7 @@ import { queryEmptySet } from "./empty-set.js"
 import { getMyHome } from "./home-controllers.js";
 import { enableVoting, stopClaimings, reassignElectors, closeVoting, reopenVoting } from "./plans-controller.js"; 
 import { getClaimableMasterPlans, startTally, closeTally, issueCredentials } from "./plans-controller.js"; 
+import { getMyNotifications } from "./notifications-controller.js";
 
 export { 
   queryHandlers,
@@ -72,5 +73,6 @@ const queryHandlers = {
   'get_community_credentials': { fn: getCommunityCredentials, authorize: true },
   'get_credential_onchain_data': { fn: getCredentialOnchainData, authorize: true },
   'get_nullifier': { fn: getNullifier, authorize: true },
-  'check_community_name_exist': {fn: checkCommunityNameExist, authorize: false}
+  'check_community_name_exist': {fn: checkCommunityNameExist, authorize: false},
+  'get_my_notifications': { fn: getMyNotifications, authorize: true },
 };

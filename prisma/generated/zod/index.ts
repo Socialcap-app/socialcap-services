@@ -44,6 +44,8 @@ export const TransactionQueueScalarFieldEnumSchema = z.enum(['uid','sequence','q
 
 export const TransactionEventScalarFieldEnumSchema = z.enum(['sequence','type','subject','payload','state','emittedUTC']);
 
+export const NotificationScalarFieldEnumSchema = z.enum(['uid','sequence','scope','type','subject','memo','state','metadata','createdUTC']);
+
 export const SortOrderSchema = z.enum(['asc','desc']);
 
 export const QueryModeSchema = z.enum(['default','insensitive']);
@@ -494,3 +496,29 @@ export type TransactionEvent = z.infer<typeof TransactionEventSchema>
 export const TransactionEventPartialSchema = TransactionEventSchema.partial()
 
 export type TransactionEventPartial = z.infer<typeof TransactionEventPartialSchema>
+
+/////////////////////////////////////////
+// NOTIFICATION SCHEMA
+/////////////////////////////////////////
+
+export const NotificationSchema = z.object({
+  uid: z.string(),
+  sequence: z.number().int(),
+  scope: z.string(),
+  type: z.string(),
+  subject: z.string(),
+  memo: z.string(),
+  state: z.number().int(),
+  metadata: z.string(),
+  createdUTC: z.coerce.date().nullish(),
+})
+
+export type Notification = z.infer<typeof NotificationSchema>
+
+/////////////////////////////////////////
+// NOTIFICATION PARTIAL SCHEMA
+/////////////////////////////////////////
+
+export const NotificationPartialSchema = NotificationSchema.partial()
+
+export type NotificationPartial = z.infer<typeof NotificationPartialSchema>
