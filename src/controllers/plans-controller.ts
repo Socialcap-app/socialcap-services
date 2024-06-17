@@ -43,6 +43,28 @@ export async function getAdminedMasterPlans(params: {
   return hasResult(plans);
 }
 
+/**
+ * Get admin community admined master plans
+ * @param params - the request 'params'
+ * @param params.communityUid - `uuid` of the required community
+ * @param params.user - the requesting user - should be an admin
+ * @returns An array of master plans
+ */
+export async function getAdminedCommunityPlans(params: { user: any, communityUid: string }) {
+  const uid = params.communityUid;
+
+  let data = await getEntity("community", uid);
+
+  // check if user is the Admin
+  if (!(data.adminUid === params.user.uid || data.xadmins.includes(params.user.uid)))
+    raiseError.ForbiddenError("Not the Admin of this community !");
+
+  const plans = await prisma.plan.findMany({
+    where: { communityUid: { equals: uid } },
+    orderBy: { name: 'asc' }
+  })
+  return hasResult(plans);
+}
 
 export async function addPlan(params: any) {
   const uid = UID.uuid4(); // a new plan

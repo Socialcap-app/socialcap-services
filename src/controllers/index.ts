@@ -4,7 +4,7 @@ import { signUp, updateProfile, getProfile } from "./persons-controller.js";
 import { updateCommunity, getCommunity, getMyCommunities, getAllCommunities, checkCommunityNameExist } from "./communities-controller.js";
 import { joinCommunity, promoteMember, updateMemberRole, getMembers } from "./members-controller.js";
 import { getAdminedCommunity } from "./communities-controller.js"
-import { getPlan, addPlan, updatePlan, getAdminedMasterPlans } from "./plans-controller.js";
+import { getPlan, addPlan, updatePlan, getAdminedMasterPlans, getAdminedCommunityPlans } from "./plans-controller.js";
 import { getClaim, getMyClaims, addClaim, updateClaim, 
   updateClaimState, submitClaim, getRunningClaims } from "./claims-controller.js";
 import { getTask, getMyTasks, getNullifier, submitTask, submitTasksBatch } from "./tasks-controller.js";
@@ -60,6 +60,7 @@ const queryHandlers = {
   'get_admined_community':  {  fn: getAdminedCommunity, authorize: true },
   'get_plan':  {  fn: getPlan, authorize: true },
   'get_admined_plans': { fn: getAdminedMasterPlans, authorize: true},
+  'get_admined_community_plans': { fn: getAdminedCommunityPlans, authorize: true},
   // 'get_my_credentials': {  fn: getClaimables, authorize: true },
   'get_my_claims': {  fn: getMyClaims, authorize: true },
   'get_my_claimables': {  fn: getClaimableMasterPlans, authorize: true },
