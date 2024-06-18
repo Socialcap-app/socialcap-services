@@ -2,7 +2,7 @@ import { noActions } from "./no-actions.js";
 import { requestOtp, login } from "./sessions-controller.js";
 import { signUp, updateProfile, getProfile } from "./persons-controller.js";
 import { updateCommunity, getCommunity, getMyCommunities, getAllCommunities, checkCommunityNameExist } from "./communities-controller.js";
-import { joinCommunity, promoteMember, updateMemberRole, getMembers } from "./members-controller.js";
+import { joinCommunity, promoteMember, updateMemberRole, getMembers, addMemberToAdmins, removeMemberFromAdmins } from "./members-controller.js";
 import { getAdminedCommunity } from "./communities-controller.js"
 import { getPlan, addPlan, updatePlan, getAdminedMasterPlans } from "./plans-controller.js";
 import { getClaim, getMyClaims, addClaim, updateClaim, 
@@ -32,6 +32,8 @@ const mutationHandlers = {
   'join_community': { fn: joinCommunity, authorize: true },
   'promote_member': { fn: promoteMember, authorize: true },
   'update_member_role': { fn: updateMemberRole, authorize: true },
+  'add_member_to_admins': { fn: addMemberToAdmins, authorize: true },
+  'remove_member_from_admins': { fn: removeMemberFromAdmins, authorize: true },
   'update_plan': { fn: updatePlan, authorize: true },
   'add_plan': { fn: addPlan, authorize: true },
   'add_claim': { fn: addClaim, authorize: true },
