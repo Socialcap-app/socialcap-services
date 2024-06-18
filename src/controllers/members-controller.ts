@@ -105,9 +105,8 @@ export async function addMemberToAdmins(params: any) {
   // check if member already an admin
   if (data.xadmins.includes(personUid))
     raiseError.BadRequest("Already an admin !");
-
   let rsm = await updateEntity("community", communityUid, {
-    xadmins: [...data.xadmins, personUid].join(',')
+    xadmins: data.xadmins + ',' + personUid
   })    
 
   return hasResult({
