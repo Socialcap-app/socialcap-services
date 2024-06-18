@@ -130,7 +130,9 @@ export async function removeMemberFromAdmins(params: any) {
     raiseError.BadRequest("Not an adminof this community !");
 
   let rsm = await updateEntity("community", communityUid, {
-    xadmins: data.xadmins.filter((t: string) => t !== personUid).join(',')
+    xadmins: (data.xadmins || '').split(',')
+              .filter((t: string) => t !== personUid)
+              .join(',')
   })    
 
   return hasResult({
