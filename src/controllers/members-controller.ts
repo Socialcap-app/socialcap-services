@@ -107,7 +107,7 @@ export async function addMemberToAdmins(params: any) {
     raiseError.BadRequest("Already an admin !");
 
   let rsm = await updateEntity("community", communityUid, {
-    xadmins: [...data.xadmins, personUid]
+    xadmins: [...data.xadmins, personUid].join(',')
   })    
 
   return hasResult({
@@ -130,7 +130,7 @@ export async function removeMemberFromAdmins(params: any) {
     raiseError.BadRequest("Not an adminof this community !");
 
   let rsm = await updateEntity("community", communityUid, {
-    xadmins: data.xadmins.filter((t: string) => t !== personUid)
+    xadmins: data.xadmins.filter((t: string) => t !== personUid).join(',')
   })    
 
   return hasResult({
