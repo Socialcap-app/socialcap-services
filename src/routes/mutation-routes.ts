@@ -21,7 +21,7 @@ async function mutationRoutes(
     console.log("REQUEST BODY", request.body)
     // extract call "params" from POST payload
     const body = (request.body as any);
-    let params = {}; 
+    let params: any = {}; 
     try { 
       params = body.params;
     }
@@ -40,7 +40,15 @@ async function mutationRoutes(
     // check if we need to be authorized for callling this procedure
     const needsAuthorized = handler['authorize'];
     if (needsAuthorized) {
-      fastify.log.info(`Handler ${method} needs authorization`)
+      fastify.log.info(`Handler ${method} needs authorization`);
+      try {
+        const jwt: any = await request.jwtVerify(); 
+        console.log(jwt);
+        // add to the received params
+        params.user = { uid: jwt.uid?.replace(/-/g,'') }
+      } catch (err: any) {
+        return hasError.UnauthorizedError(err);
+      }      
     }
 
     // call the registered 'method' with given 'params'
