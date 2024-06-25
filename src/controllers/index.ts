@@ -5,18 +5,22 @@ import { updateCommunity, getCommunity, getMyCommunities, getAllCommunities, che
 import { joinCommunity, promoteMember, updateMemberRole, getMembers, addMemberToAdmins, removeMemberFromAdmins } from "./members-controller.js";
 import { getAdminedCommunity } from "./communities-controller.js"
 import { getPlan, addPlan, updatePlan, getAdminedMasterPlans } from "./plans-controller.js";
-import { getClaim, getMyClaims, addClaim, updateClaim, 
-  updateClaimState, submitClaim, getRunningClaims } from "./claims-controller.js";
+import {
+  getClaim, getMyClaims, addClaim, updateClaim,
+  updateClaimState, submitClaim, getRunningClaims
+} from "./claims-controller.js";
 import { getTask, getMyTasks, getNullifier, submitTask, submitTasksBatch } from "./tasks-controller.js";
-import { getCredential, getMyCredentials, getCommunityCredentials, 
-  getCredentialOnchainData } from "./credentials-controller.js";
+import {
+  getCredential, getMyCredentials, getCommunityCredentials,
+  getCredentialOnchainData
+} from "./credentials-controller.js";
 import { queryEmptySet } from "./empty-set.js"
 import { getMyHome } from "./home-controllers.js";
-import { enableVoting, stopClaimings, reassignElectors, closeVoting, reopenVoting } from "./plans-controller.js"; 
-import { getClaimableMasterPlans, startTally, closeTally, issueCredentials } from "./plans-controller.js"; 
+import { enableVoting, stopClaimings, reassignElectors, closeVoting, reopenVoting } from "./plans-controller.js";
+import { getClaimableMasterPlans, startTally, closeTally, issueCredentials } from "./plans-controller.js";
 import { getMyNotifications } from "./notifications-controller.js";
-
-export { 
+import { invite } from "./mails-controller.js"
+export {
   queryHandlers,
   mutationHandlers,
 };
@@ -38,18 +42,19 @@ const mutationHandlers = {
   'add_plan': { fn: addPlan, authorize: true },
   'add_claim': { fn: addClaim, authorize: true },
   'update_claim': { fn: updateClaim, authorize: true },
-  'update_claim_state':  { fn: updateClaimState, authorize: true },
+  'update_claim_state': { fn: updateClaimState, authorize: true },
   'submit_claim': { fn: submitClaim, authorize: true },
-  'submit_task':  { fn: submitTask, authorize: true },
-  'submit_tasks_batch':  { fn: submitTasksBatch, authorize: true },
-  'stop_claimings': { fn: stopClaimings, authorize: true},
-  'enable_voting': { fn: enableVoting, authorize: true},
-  'reassign_electors': { fn: reassignElectors, authorize: true},
-  'close_voting': { fn: closeVoting, authorize: true},
-  'reopen_voting': { fn: reopenVoting, authorize: true},
-  'start_tally': { fn: startTally, authorize: true},
-  'close_tally': { fn: closeTally, authorize: true},
-  'issue_credentials': { fn: issueCredentials, authorize: true}
+  'submit_task': { fn: submitTask, authorize: true },
+  'submit_tasks_batch': { fn: submitTasksBatch, authorize: true },
+  'stop_claimings': { fn: stopClaimings, authorize: true },
+  'enable_voting': { fn: enableVoting, authorize: true },
+  'reassign_electors': { fn: reassignElectors, authorize: true },
+  'close_voting': { fn: closeVoting, authorize: true },
+  'reopen_voting': { fn: reopenVoting, authorize: true },
+  'start_tally': { fn: startTally, authorize: true },
+  'close_tally': { fn: closeTally, authorize: true },
+  'issue_credentials': { fn: issueCredentials, authorize: true },
+  'invite': { fn: invite, authorize: true }
 }
 
 const queryHandlers = {
@@ -59,15 +64,15 @@ const queryHandlers = {
   'get_community': { fn: getCommunity, authorize: true },
   'get_my_communities': { fn: getMyCommunities, authorize: true },
   'get_all_communities': { fn: getAllCommunities, authorize: true },
-  'get_members':  { fn: getMembers, authorize: true },
-  'get_admined_community':  {  fn: getAdminedCommunity, authorize: true },
-  'get_plan':  {  fn: getPlan, authorize: true },
-  'get_admined_plans': { fn: getAdminedMasterPlans, authorize: true},
+  'get_members': { fn: getMembers, authorize: true },
+  'get_admined_community': { fn: getAdminedCommunity, authorize: true },
+  'get_plan': { fn: getPlan, authorize: true },
+  'get_admined_plans': { fn: getAdminedMasterPlans, authorize: true },
   // 'get_my_credentials': {  fn: getClaimables, authorize: true },
-  'get_my_claims': {  fn: getMyClaims, authorize: true },
-  'get_my_claimables': {  fn: getClaimableMasterPlans, authorize: true },
-  'get_running_claims': {  fn: getRunningClaims, authorize: true },
-  'get_claim': {  fn: getClaim, authorize: true },
+  'get_my_claims': { fn: getMyClaims, authorize: true },
+  'get_my_claimables': { fn: getClaimableMasterPlans, authorize: true },
+  'get_running_claims': { fn: getRunningClaims, authorize: true },
+  'get_claim': { fn: getClaim, authorize: true },
   'get_task': { fn: getTask, authorize: true },
   'get_my_tasks': { fn: getMyTasks, authorize: true },
   'get_credential': { fn: getCredential, authorize: false },
@@ -75,6 +80,6 @@ const queryHandlers = {
   'get_community_credentials': { fn: getCommunityCredentials, authorize: true },
   'get_credential_onchain_data': { fn: getCredentialOnchainData, authorize: true },
   'get_nullifier': { fn: getNullifier, authorize: true },
-  'check_community_name_exist': {fn: checkCommunityNameExist, authorize: false},
+  'check_community_name_exist': { fn: checkCommunityNameExist, authorize: false },
   'get_my_notifications': { fn: getMyNotifications, authorize: true },
 };
