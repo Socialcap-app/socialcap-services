@@ -48,6 +48,9 @@ export async function addPlan(params: any) {
   const uid = UID.uuid4(); // a new plan
   params.new = true;
 
+  params.evidence = JSON.stringify(params.evidence || "[]");
+  params.strategy = JSON.stringify(params.strategy || "{}");
+  params.state = parseInt(params.state || 1);
   let rs = await updateEntity("plan", uid, params);
 
   return hasResult({
